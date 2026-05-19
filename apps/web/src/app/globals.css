@@ -1,0 +1,165 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply font-sans text-navy bg-white;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-semibold tracking-tight;
+  }
+
+  ::selection {
+    @apply bg-sky/20 text-navy;
+  }
+}
+
+@layer components {
+  .container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 
+           font-medium text-sm rounded-lg transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           active:scale-[0.98];
+  }
+
+  .btn-primary {
+    @apply bg-navy text-white hover:bg-navy/90 focus:ring-navy;
+  }
+
+  .btn-secondary {
+    @apply bg-sky text-white hover:bg-sky/90 focus:ring-sky;
+  }
+
+  .btn-outline {
+    @apply border border-navy/20 text-navy hover:bg-navy/5 focus:ring-navy/20;
+  }
+
+  .btn-ghost {
+    @apply text-navy hover:bg-navy/5;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  .input {
+    @apply w-full px-4 py-2.5 text-sm bg-white border border-border
+           rounded-lg transition-all duration-200
+           placeholder:text-gray-400
+           focus:outline-none focus:border-sky focus:ring-1 focus:ring-sky;
+  }
+
+  .input-error {
+    @apply border-red-400 focus:border-red-400 focus:ring-red-400;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-navy/80 mb-1.5;
+  }
+
+  .card {
+    @apply bg-white rounded-xl border border-border p-5 transition-all duration-200;
+  }
+
+  .card-hover {
+    @apply hover:border-sky/30 hover:shadow-soft;
+  }
+
+  .section {
+    @apply py-16 md:py-24;
+  }
+
+  .page-title {
+    @apply text-2xl md:text-3xl font-heading font-bold text-navy;
+  }
+
+  .loading-spinner {
+    @apply w-5 h-5 border-2 border-sky/30 border-t-sky rounded-full animate-spin;
+  }
+
+  .loading-spinner-lg {
+    @apply w-8 h-8;
+  }
+
+  .skeleton {
+    @apply bg-light-grey animate-pulse rounded;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full;
+  }
+
+  .badge-success {
+    @apply bg-green-50 text-green-700;
+  }
+
+  .badge-warning {
+    @apply bg-amber-50 text-amber-700;
+  }
+
+  .badge-error {
+    @apply bg-red-50 text-red-700;
+  }
+
+  .badge-info {
+    @apply bg-sky/10 text-sky;
+  }
+
+  .divider {
+    @apply h-px bg-border my-6;
+  }
+
+  .link {
+    @apply text-sky hover:text-sky/80 transition-colors;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}

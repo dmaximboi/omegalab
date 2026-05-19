@@ -1,0 +1,22 @@
+{
+  "name": "@omega/ui",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.5.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.8",
+    "typescript": "^5.6.2"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
+  }
+}

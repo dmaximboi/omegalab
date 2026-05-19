@@ -1,0 +1,165 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?
+  image         String?
+  role          String         @default("USER")
+  emailVerified DateTime?
+  failedLogins  Int            @default(0)
+  lockedUntil   DateTime?
+  lastLoginAt   DateTime?
+  lastLoginIp   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  orders        Order[]
+  notifications Notification[]
+  sessions      Session[]
+  auditLogs     AuditLog[]     @relation("AdminAuditLogs")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  slug        String?       @unique
+  name        String
+  description String
+  price       Decimal
+  category    String
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  images      ProductImage[]
+  orderItems  OrderItem[]
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  order     Int
+  checksum  String?
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  items           OrderItem[]
+  totalAmount     Decimal
+  status          String      @default("PENDING")
+  flwRef          String?
+  txRef           String      @unique
+  receiptHash     String      @unique
+  receiptSalt     String?
+  paymentVerified Boolean     @default(false)
+  verifiedAt      DateTime?
+  verifiedBy      String?
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Decimal
+  createdAt DateTime @default(now())
+}
+
+model ContactMessage {
+  id             String   @id @default(cuid())
+  name           String
+  email          String
+  phone          String?
+  subject        String?
+  message        String
+  isRead         Boolean  @default(false)
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  admin     User     @relation("AdminAuditLogs", fields: [adminId], references: [id])
+  action    String
+  entityId  String?
+  oldValue  String?
+  newValue  String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}
+
+model SecurityEvent {
+  id          String   @id @default(cuid())
+  eventType   String
+  severity    String
+  ipAddress   String?
+  userId      String?
+  description String
+  metadata    String?
+  createdAt   DateTime @default(now())
+}
+
+model RateLimitLog {
+  id         String   @id @default(cuid())
+  identifier String
+  endpoint   String
+  blocked    Boolean
+  createdAt  DateTime @default(now())
+}
+
+model PaymentLog {
+  id            String   @id @default(cuid())
+  orderId       String?
+  txRef         String?
+  flwRef        String?
+  amount        Decimal?
+  status        String
+  responseCode  String?
+  responseData  String?
+  webhookData   String?
+  ipAddress     String?
+  createdAt     DateTime @default(now())
+}

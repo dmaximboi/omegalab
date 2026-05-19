@@ -1,0 +1,22 @@
+{
+  "name": "de-omega-labaffairs",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "clean": "turbo clean && rm -rf node_modules",
+    "db:push": "turbo db:push",
+    "db:generate": "turbo db:generate"
+  },
+  "devDependencies": {
+    "turbo": "^2.1.0",
+    "typescript": "^5.6.2"
+  },
+  "packageManager": "npm@10.8.0"
+}
