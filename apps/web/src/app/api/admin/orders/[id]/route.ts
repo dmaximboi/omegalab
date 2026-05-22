@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { PrismaClient, PaymentLog } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient();
@@ -38,8 +38,8 @@ export async function GET(
       orderBy: { createdAt: "asc" },
     });
 
-    // Build detailed timeline — PaymentLog type is now explicit, no implicit any
-    const timeline = logs.map((log: PaymentLog, index: number) => {
+    // Build detailed timeline with human-readable explanations
+    const timeline = logs.map((log: typeof logs[number], index: number) => {
       const stepName = log.status || "unknown";
       let parsedData: unknown = null;
       let parsedWebhook: unknown = null;
@@ -49,8 +49,8 @@ export async function GET(
       } catch { parsedData = log.responseData; }
 
       try {
-        if ((log as PaymentLog & { webhookData?: string }).webhookData) {
-          parsedWebhook = JSON.parse((log as PaymentLog & { webhookData?: string }).webhookData!);
+        if ((log as any).webhookData) {
+          parsedWebhook = JSON.parse((log as any).webhookData);
         }
       } catch { /* ignore */ }
 

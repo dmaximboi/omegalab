@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import crypto from "crypto";
+import { verifyReceiptHash } from "@/lib/flutterwave";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient();
@@ -49,14 +49,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Invalid or unverified receipt" }, { status: 404 });
     }
 
-    // Verify the receipt hash is authentic using HMAC
-    // The QR code should contain the receiptHash which was generated with HMAC
-    // We verify it matches what we stored — no one can forge this without the server secret
-    const isHashValid = order.receiptHash === code;
-
-    if (!isHashValid) {
-      await logVerifyAttempt(ipAddress, code.slice(0, 20), false, "hash_mismatch");
-      return NextResponse.json({ error: "Invalid receipt" }, { status: 404 });
+    // Verify receipt integrity using HMAC re-derivation with stored salt
+    // This ensures the hash wasn't stolen from DB and applied to tampered data
+    if (order.receiptSalt) {
+      const isHashValid = verifyReceiptHash(order.txRef, order.txRef, order.receiptSalt, code);
+      if (!isHashValid) {
+        await logVerifyAttempt(ipAddress, code.slice(0, 20), false, "hash_mismatch");
+        return NextResponse.json({ error: "Invalid receipt" }, { status: 404 });
+      }
     }
 
     await logVerifyAttempt(ipAddress, code.slice(0, 20), true, "verified");

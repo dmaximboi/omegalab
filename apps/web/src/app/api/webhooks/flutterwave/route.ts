@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import Decimal from "decimal.js";
 import { verifyFlutterwavePayment, verifyWebhookSignature } from "@/lib/flutterwave";
 
 // Singleton Prisma client
@@ -60,7 +61,9 @@ export async function POST(request: Request) {
 
     const isSuccess = flwResponse?.status === "success" && flwData?.status === "successful";
     const txRefMatch = flwData?.tx_ref === order.txRef;
-    const amountOk = parseFloat(flwData?.amount || "0") >= parseFloat(order.totalAmount.toString());
+    const flwAmount = new Decimal(flwData?.amount || "0");
+    const dbAmount = new Decimal(order.totalAmount.toString());
+    const amountOk = flwAmount.gte(dbAmount);
     const currencyOk = flwData?.currency === EXPECTED_CURRENCY;
 
     if (isSuccess && txRefMatch && amountOk && currencyOk) {

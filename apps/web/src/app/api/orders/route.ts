@@ -138,8 +138,9 @@ export async function POST(request: Request) {
       update: {},
     });
 
-    // Generate HMAC receipt hash with salt
+    // Generate HMAC receipt hash with salt (orderId not available yet, use txRef as unique identifier)
     const { hash: receiptHash, salt: receiptSalt } = generateReceiptHash(txRef, txRef);
+    // Note: txRef is unique per order and used as the orderId component since order hasn't been created yet
 
     // STEP 1: INITIATED — Create order in database
     const order = await prisma.order.create({
