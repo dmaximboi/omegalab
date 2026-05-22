@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
@@ -16,7 +16,7 @@ interface OrderReceipt {
   date: string;
 }
 
-export default function OrderSuccessPage() {
+function OrderSuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("id");
   const [receipt, setReceipt] = useState<OrderReceipt | null>(null);
@@ -44,85 +44,98 @@ export default function OrderSuccessPage() {
   }, [orderId]);
 
   return (
+    <div className="max-w-md mx-auto text-center px-4 w-full">
+      {showReceipt && receipt ? (
+        <div>
+          <Receipt
+            orderNumber={receipt.orderNumber}
+            receiptHash={receipt.receiptHash}
+            customerName={receipt.customerName}
+            items={receipt.items}
+            total={receipt.total}
+            date={receipt.date}
+          />
+          <button
+            onClick={() => setShowReceipt(false)}
+            className="mt-4 text-sm text-navy/50 hover:text-navy transition"
+          >
+            ← Back to confirmation
+          </button>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border p-8 shadow-sm">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-10 h-10 text-green-600" />
+          </div>
+
+          <h1 className="text-2xl font-bold text-navy mb-2">Order Confirmed!</h1>
+          <p className="text-navy/60 mb-6">
+            Thank you for your order. We&apos;ve received your payment and will begin processing your order shortly.
+          </p>
+
+          {orderId && (
+            <div className="bg-light-grey rounded-lg p-4 mb-6">
+              <p className="text-sm text-navy/60 mb-1">Order Reference</p>
+              <p className="font-mono font-semibold text-navy">
+                #{orderId.slice(-8).toUpperCase()}
+              </p>
+            </div>
+          )}
+
+          <p className="text-sm text-navy/60 mb-6">
+            A confirmation email will be sent to you with your order details and tracking information.
+          </p>
+
+          {/* Receipt Button */}
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 py-3 text-navy/40">
+              <Loader2 size={16} className="animate-spin" />
+              <span className="text-sm">Loading receipt...</span>
+            </div>
+          ) : receipt ? (
+            <button
+              onClick={() => setShowReceipt(true)}
+              className="w-full flex items-center justify-center gap-2 bg-navy text-white px-6 py-3 rounded-lg hover:bg-navy/90 transition mb-3"
+            >
+              View & Print Receipt (with QR)
+            </button>
+          ) : null}
+
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/catalogue"
+              className="flex items-center justify-center gap-2 bg-sky text-white px-6 py-3 rounded-lg hover:bg-sky/90 transition"
+            >
+              <ShoppingBag size={18} />
+              Continue Shopping
+            </Link>
+            <Link
+              href="/"
+              className="flex items-center justify-center gap-2 text-navy/60 hover:text-navy px-6 py-3 rounded-lg transition"
+            >
+              <Home size={18} />
+              Back to Home
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function OrderSuccessPage() {
+  return (
     <>
       <Navbar />
       <main className="min-h-screen bg-light-grey flex items-center justify-center py-8">
-        <div className="max-w-md mx-auto text-center px-4 w-full">
-          {showReceipt && receipt ? (
-            <div>
-              <Receipt
-                orderNumber={receipt.orderNumber}
-                receiptHash={receipt.receiptHash}
-                customerName={receipt.customerName}
-                items={receipt.items}
-                total={receipt.total}
-                date={receipt.date}
-              />
-              <button
-                onClick={() => setShowReceipt(false)}
-                className="mt-4 text-sm text-navy/50 hover:text-navy transition"
-              >
-                ← Back to confirmation
-              </button>
-            </div>
-          ) : (
-            <div className="bg-white rounded-2xl border p-8 shadow-sm">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-10 h-10 text-green-600" />
-              </div>
-
-              <h1 className="text-2xl font-bold text-navy mb-2">Order Confirmed!</h1>
-              <p className="text-navy/60 mb-6">
-                Thank you for your order. We&apos;ve received your payment and will begin processing your order shortly.
-              </p>
-
-              {orderId && (
-                <div className="bg-light-grey rounded-lg p-4 mb-6">
-                  <p className="text-sm text-navy/60 mb-1">Order Reference</p>
-                  <p className="font-mono font-semibold text-navy">
-                    #{orderId.slice(-8).toUpperCase()}
-                  </p>
-                </div>
-              )}
-
-              <p className="text-sm text-navy/60 mb-6">
-                A confirmation email will be sent to you with your order details and tracking information.
-              </p>
-
-              {/* Receipt Button */}
-              {loading ? (
-                <div className="flex items-center justify-center gap-2 py-3 text-navy/40">
-                  <Loader2 size={16} className="animate-spin" />
-                  <span className="text-sm">Loading receipt...</span>
-                </div>
-              ) : receipt ? (
-                <button
-                  onClick={() => setShowReceipt(true)}
-                  className="w-full flex items-center justify-center gap-2 bg-navy text-white px-6 py-3 rounded-lg hover:bg-navy/90 transition mb-3"
-                >
-                  View & Print Receipt (with QR)
-                </button>
-              ) : null}
-
-              <div className="flex flex-col gap-3">
-                <Link
-                  href="/catalogue"
-                  className="flex items-center justify-center gap-2 bg-sky text-white px-6 py-3 rounded-lg hover:bg-sky/90 transition"
-                >
-                  <ShoppingBag size={18} />
-                  Continue Shopping
-                </Link>
-                <Link
-                  href="/"
-                  className="flex items-center justify-center gap-2 text-navy/60 hover:text-navy px-6 py-3 rounded-lg transition"
-                >
-                  <Home size={18} />
-                  Back to Home
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
+        <Suspense fallback={
+          <div className="flex flex-col items-center justify-center gap-4">
+            <Loader2 className="animate-spin text-navy" size={48} />
+            <p className="text-navy/60">Loading order details...</p>
+          </div>
+        }>
+          <OrderSuccessContent />
+        </Suspense>
       </main>
     </>
   );
