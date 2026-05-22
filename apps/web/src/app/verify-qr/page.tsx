@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
@@ -9,7 +9,7 @@ import {
   Package, Calendar, User, Receipt
 } from "lucide-react";
 
-export default function VerifyQRPage() {
+function VerifyQRContent() {
   const searchParams = useSearchParams();
   const code = searchParams.get("code");
   
@@ -47,18 +47,6 @@ export default function VerifyQRPage() {
   }, [code]);
 
   return (
-    <>
-      <Navbar />
-      <main className="min-h-screen bg-gray-50">
-        <div className="max-w-lg mx-auto px-4 py-12">
-          <Link 
-            href="/"
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8"
-          >
-            <ArrowLeft size={18} />
-            Back to Home
-          </Link>
-
           <div className="bg-white rounded-xl shadow-sm border p-8">
             {status === "loading" && (
               <div className="text-center py-8">
@@ -147,6 +135,31 @@ export default function VerifyQRPage() {
               </div>
             )}
           </div>
+  );
+}
+
+export default function VerifyQRPage() {
+  return (
+    <>
+      <Navbar />
+      <main className="min-h-screen bg-gray-50">
+        <div className="max-w-lg mx-auto px-4 py-12">
+          <Link 
+            href="/"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8"
+          >
+            <ArrowLeft size={18} />
+            Back to Home
+          </Link>
+
+          <Suspense fallback={
+            <div className="bg-white rounded-xl shadow-sm border p-8 text-center py-16">
+              <Loader2 className="animate-spin mx-auto text-blue-600 mb-4" size={48} />
+              <p className="text-gray-600">Loading verification details...</p>
+            </div>
+          }>
+            <VerifyQRContent />
+          </Suspense>
         </div>
       </main>
     </>

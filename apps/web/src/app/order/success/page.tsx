@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
@@ -16,7 +16,7 @@ interface OrderReceipt {
   date: string;
 }
 
-export default function OrderSuccessPage() {
+function OrderSuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("id");
   const [receipt, setReceipt] = useState<OrderReceipt | null>(null);
@@ -44,10 +44,7 @@ export default function OrderSuccessPage() {
   }, [orderId]);
 
   return (
-    <>
-      <Navbar />
-      <main className="min-h-screen bg-light-grey flex items-center justify-center py-8">
-        <div className="max-w-md mx-auto text-center px-4 w-full">
+    <div className="max-w-md mx-auto text-center px-4 w-full">
           {showReceipt && receipt ? (
             <div>
               <Receipt
@@ -123,6 +120,23 @@ export default function OrderSuccessPage() {
             </div>
           )}
         </div>
+  );
+}
+
+export default function OrderSuccessPage() {
+  return (
+    <>
+      <Navbar />
+      <main className="min-h-screen bg-light-grey flex items-center justify-center py-8">
+        <Suspense fallback={
+          <div className="max-w-md mx-auto text-center px-4 w-full">
+            <div className="bg-white rounded-2xl border p-8 shadow-sm flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-sky animate-spin" />
+            </div>
+          </div>
+        }>
+          <OrderSuccessContent />
+        </Suspense>
       </main>
     </>
   );

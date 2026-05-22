@@ -12,6 +12,8 @@ const prisma = globalForPrisma.prisma || new PrismaClient({
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
