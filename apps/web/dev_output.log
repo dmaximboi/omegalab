@@ -1,0 +1,75 @@
+
+> @omega/web@1.0.0 dev
+> next dev --port 3000
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 1778ms
+ ○ Compiling /src/middleware ...
+ ✓ Compiled /src/middleware in 1008ms (171 modules)
+ ○ Compiling /order/success ...
+ ✓ Compiled /order/success in 5.3s (696 modules)
+ GET /order/success?id=test-order-id 200 in 5910ms
+ ○ Compiling / ...
+ ✓ Compiled /verify-qr in 7.2s (659 modules)
+ ✓ Compiled in 896ms (363 modules)
+[RECEIPT] Error: PrismaClientInitializationError:
+Invalid `prisma.order.findFirst()` invocation:
+
+
+error: Error validating datasource `db`: the URL must start with the protocol `postgresql://` or `postgres://`.
+  -->  schema.prisma:8
+   |
+ 7 |   provider  = "postgresql"
+ 8 |   url       = env("DATABASE_URL")
+   |
+
+Validation Error Count: 1
+    at $n.handleRequestError (/app/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/app/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/app/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at async l (/app/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/orders/receipt/route.ts:26:23)
+    at async /app/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:57228
+    at async eT.execute (/app/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:46851)
+    at async eT.handle (/app/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:58760)
+    at async doRender (/app/node_modules/next/dist/server/base-server.js:1366:42)
+    at async cacheEntry.responseCache.get.routeKind (/app/node_modules/next/dist/server/base-server.js:1588:28)
+    at async DevServer.renderToResponseWithComponentsImpl (/app/node_modules/next/dist/server/base-server.js:1496:28)
+    at async DevServer.renderPageComponent (/app/node_modules/next/dist/server/base-server.js:1924:24)
+    at async DevServer.renderToResponseImpl (/app/node_modules/next/dist/server/base-server.js:1962:32)
+    at async DevServer.pipeImpl (/app/node_modules/next/dist/server/base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/app/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/app/node_modules/next/dist/server/base-server.js:818:17)
+    at async /app/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/app/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/app/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/app/node_modules/next/dist/server/lib/router-server.js:179:21)
+    at async handleRequest (/app/node_modules/next/dist/server/lib/router-server.js:359:24)
+    at async requestHandlerImpl (/app/node_modules/next/dist/server/lib/router-server.js:383:13)
+    at async Server.requestListener (/app/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  clientVersion: '5.22.0',
+  errorCode: undefined
+}
+ GET /api/orders/receipt?id=test-order-id 500 in 9014ms
+ GET /api/auth/session 200 in 9051ms
+ GET /verify-qr?code=test-code 200 in 7098ms
+ GET / 200 in 8945ms
+[next-auth][warn][NEXTAUTH_URL]
+https://next-auth.js.org/warnings#nextauth_url
+[next-auth][warn][NO_SECRET]
+https://next-auth.js.org/warnings#no_secret
+ POST /api/auth/_log 200 in 578ms
+ POST /api/auth/_log 200 in 577ms
+ GET /api/auth/session 200 in 42ms
+ ✓ Compiled /api/verify-qr in 272ms (721 modules)
+[next-auth][warn][NEXTAUTH_URL]
+https://next-auth.js.org/warnings#nextauth_url
+[next-auth][warn][NO_SECRET]
+https://next-auth.js.org/warnings#no_secret
+ GET /api/auth/session 200 in 555ms
+ GET /api/verify-qr?code=test-code 400 in 607ms
+ GET /api/verify-qr?code=test-code 400 in 16ms
+ ✓ Compiled in 552ms (363 modules)

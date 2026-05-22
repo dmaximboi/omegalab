@@ -4,6 +4,8 @@ import crypto from "crypto";
 
 const prisma = new PrismaClient();
 
+export const dynamic = "force-dynamic";
+
 /**
  * CRON JOB: Keep Database Alive
  * 

@@ -1,0 +1,22 @@
+import { z } from "zod";
+export declare function sanitizeHtml(input: string): string;
+export declare function detectXss(input: string): boolean;
+export declare function detectSqlInjection(input: string): boolean;
+export declare function isValidEmail(email: string): boolean;
+export declare function isValidNigerianPhone(phone: string): boolean;
+export declare function isValidHttpsUrl(url: string): boolean;
+export declare function isAllowedImageType(mimeType: string): boolean;
+export declare function isFileSizeValid(size: number, maxMB?: number): boolean;
+export declare function escapeHtml(input: string): string;
+export declare function safeJsonParse<T>(str: string, fallback: T): T;
+export declare const emailSchema: z.ZodString;
+export declare const phoneSchema: z.ZodString;
+export declare const nameSchema: z.ZodString;
+export declare const passwordSchema: z.ZodString;
+export declare const priceSchema: z.ZodNumber;
+export declare const quantitySchema: z.ZodNumber;
+export declare function validateSchema<T>(schema: z.ZodSchema<T>, data: unknown): {
+    success: boolean;
+    data?: T;
+    errors?: string[];
+};

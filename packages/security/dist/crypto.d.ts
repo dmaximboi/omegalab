@@ -1,0 +1,12 @@
+export declare function sha256(data: string): string;
+export declare function generateSalt(length?: number): string;
+export declare function hmacSha256(data: string, secret: string): string;
+export declare function timingSafeEqual(a: string, b: string): boolean;
+export declare function encrypt(plaintext: string, key: string): string;
+export declare function decrypt(ciphertext: string, key: string): string | null;
+export declare function generateSecureToken(length?: number): string;
+export declare function generateTxRef(): string;
+export declare function generateReceiptHash(txRef: string, userId: string, amount: string, salt: string): string;
+export declare function deriveKey(password: string, salt: string, iterations?: number): Buffer;
+export declare function generateCsrfToken(): string;
+export declare function verifyHmac(data: string, secret: string, expectedHmac: string): boolean;

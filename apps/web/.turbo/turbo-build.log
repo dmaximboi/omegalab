@@ -1,0 +1,98 @@
+
+> @omega/web@1.0.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/23) ...
+[SITEMAP] Failed to fetch products: PrismaClientInitializationError:
+Invalid `prisma.product.findMany()` invocation:
+
+
+error: Error validating datasource `db`: the URL must start with the protocol `postgresql://` or `postgres://`.
+  -->  schema.prisma:8
+   |
+ 7 |   provider  = "postgresql"
+ 8 |   url       = env("DATABASE_URL")
+   |
+
+Validation Error Count: 1
+    at $n.handleRequestError (/app/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/app/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/app/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at async l (/app/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at async c (/app/apps/web/.next/server/app/sitemap.xml/route.js:1:1201)
+    at async h (/app/apps/web/.next/server/app/sitemap.xml/route.js:1:1872)
+    at async /app/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:38411
+    at async e_.execute (/app/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:27880)
+    at async e_.handle (/app/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:39943)
+    at async exportAppRoute (/app/node_modules/next/dist/export/routes/app-route.js:77:26) {
+  clientVersion: '5.22.0',
+  errorCode: undefined
+}
+ ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+   Generating static pages (5/23)
+ ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+ ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+   Generating static pages (11/23)
+   Generating static pages (17/23)
+ ✓ Generating static pages (23/23)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    207 B           117 kB
+├ ○ /_not-found                          873 B          88.2 kB
+├ ƒ /admin                               3.04 kB         114 kB
+├ ƒ /admin/messages                      2.39 kB        98.8 kB
+├ ƒ /admin/orders                        5.82 kB         103 kB
+├ ƒ /admin/products                      2.37 kB         104 kB
+├ ƒ /admin/products/new                  18.7 kB         115 kB
+├ ƒ /admin/verify-qr                     2.89 kB        90.2 kB
+├ ƒ /api/admin/messages                  0 B                0 B
+├ ƒ /api/admin/orders                    0 B                0 B
+├ ƒ /api/admin/orders/[id]               0 B                0 B
+├ ƒ /api/admin/products                  0 B                0 B
+├ ƒ /api/analytics/consent               0 B                0 B
+├ ƒ /api/auth/[...nextauth]              0 B                0 B
+├ ƒ /api/config                          0 B                0 B
+├ ƒ /api/config/contact                  0 B                0 B
+├ ƒ /api/contact                         0 B                0 B
+├ ƒ /api/cron/keep-alive                 0 B                0 B
+├ ƒ /api/healthz                         0 B                0 B
+├ ƒ /api/orders                          0 B                0 B
+├ ƒ /api/orders/[id]                     0 B                0 B
+├ ƒ /api/orders/receipt                  0 B                0 B
+├ ƒ /api/orders/verify                   0 B                0 B
+├ ƒ /api/products                        0 B                0 B
+├ ƒ /api/products/[id]                   0 B                0 B
+├ ƒ /api/uploadthing                     0 B                0 B
+├ ƒ /api/verify-qr                       0 B                0 B
+├ ƒ /api/webhooks/flutterwave            0 B                0 B
+├ ○ /catalogue                           3.21 kB         117 kB
+├ ƒ /catalogue/[id]                      2.54 kB         116 kB
+├ ○ /contact                             3.25 kB         117 kB
+├ ○ /login                               2.73 kB         152 kB
+├ ○ /order                               6.34 kB         120 kB
+├ ƒ /order/[id]                          3.24 kB         117 kB
+├ ○ /order/success                       9.73 kB         124 kB
+├ ○ /privacy                             194 B           117 kB
+├ ○ /register                            3.21 kB         137 kB
+├ ○ /robots.txt                          0 B                0 B
+├ ○ /sitemap.xml                         0 B                0 B
+├ ○ /terms                               193 B           117 kB
+└ ○ /verify-qr                           2.77 kB         117 kB
++ First Load JS shared by all            87.3 kB
+  ├ chunks/1dd3208c-98e3599f9203ece6.js  53.6 kB
+  ├ chunks/528-1a9db869f1a8ede4.js       31.7 kB
+  └ other shared chunks (total)          1.95 kB
+
+
+ƒ Middleware                             48.7 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand

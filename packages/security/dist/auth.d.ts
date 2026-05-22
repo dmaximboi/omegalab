@@ -1,0 +1,14 @@
+export type Role = "USER" | "ADMIN";
+export type Permission = "read" | "write" | "delete" | "admin";
+export declare function hasPermission(role: Role, permission: Permission): boolean;
+export declare function isAdmin(role: string | undefined): boolean;
+export declare function isAdminEmail(email: string): boolean;
+export declare function isAccountLocked(failedAttempts: number, lockedUntil: Date | null): boolean;
+export declare function calculateLockoutDuration(failedAttempts: number): number;
+export declare function generateSessionToken(): string;
+export declare function createJwt(payload: Record<string, unknown>, secret: string, expiresIn?: string): Promise<string>;
+export declare function verifyJwt<T>(token: string, secret: string): Promise<T | null>;
+export declare function generateDeviceFingerprint(userAgent: string, ip: string, acceptLanguage: string): string;
+export declare function detectSessionHijack(storedFingerprint: string, currentFingerprint: string, storedIp: string, currentIp: string): boolean;
+export declare function generateMfaCode(): string;
+export declare function validateMfaCode(input: string, expected: string, expiresAt: Date): boolean;
