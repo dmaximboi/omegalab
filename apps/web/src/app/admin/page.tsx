@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import {
@@ -42,12 +42,22 @@ const ADMIN_TABS = [
 export default function AdminDashboard() {
   const { data: session } = useSession();
   const pathname = usePathname();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [navigating, setNavigating] = useState<string | null>(null);
 
-  // Update active tab based on pathname
+  const handleTabClick = (e: React.MouseEvent, tabId: string, href: string) => {
+    if (navigating) {
+      e.preventDefault();
+      return;
+    }
+    setNavigating(tabId);
+    router.push(href);
+  };
+
+  // Clear navigating state when pathname changes
   useEffect(() => {
-    const tab = ADMIN_TABS.find(t => pathname === t.href || (t.href !== "/admin" && pathname.startsWith(t.href)));
-    if (tab) setActiveTab(tab.id);
+    setNavigating(null);
   }, [pathname]);
 
   // Session is guaranteed by layout.tsx, but add safety check
@@ -115,24 +125,31 @@ export default function AdminDashboard() {
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {ADMIN_TABS.map((tab) => {
             const isActive = activeTab === tab.id;
+            const isNavigating = navigating === tab.id;
             return (
-              <Link
+              <button
                 key={tab.id}
-                href={tab.href}
+                onClick={(e) => handleTabClick(e, tab.id, tab.href)}
+                disabled={isNavigating}
                 className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all
+                  w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all
                   ${isActive 
                     ? "bg-sky/10 text-sky" 
                     : "text-navy/70 hover:bg-light-grey hover:text-navy"
                   }
+                  ${isNavigating ? "opacity-50 cursor-not-allowed" : ""}
                 `}
               >
-                <tab.icon size={20} />
+                {isNavigating ? (
+                  <Loader2 className="animate-spin" size={20} />
+                ) : (
+                  <tab.icon size={20} />
+                )}
                 <span className="font-medium text-sm">{tab.label}</span>
-                {isActive && (
+                {isActive && !isNavigating && (
                   <ChevronRight size={16} className="ml-auto" />
                 )}
-              </Link>
+              </button>
             );
           })}
         </nav>

@@ -120,7 +120,7 @@ export async function POST(request: Request) {
     // Generate cryptographically secure identifiers
     const txRef = generateTxRef();
     const paymentToken = crypto.randomBytes(32).toString('hex');
-    const tokenExpiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
+    const tokenExpiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
 
     // Idempotency: check if same user+items already has a PENDING order in last 5 min
     const recentOrder = await getPrisma().order.findFirst({
