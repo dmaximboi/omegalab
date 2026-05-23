@@ -3,15 +3,25 @@ import { PrismaClient } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
+// Simple test endpoint - always works to verify route exists
+export async function HEAD() {
+  return NextResponse.json({ status: "ok" }, { status: 200 });
+}
+
 // Lazy Prisma client - only instantiated when first accessed
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
 function getPrisma() {
   if (!globalForPrisma.prisma) {
+    const dbUrl = process.env.DATABASE_URL;
+    console.log("[HEALTH] DATABASE_URL set:", !!dbUrl, "length:", dbUrl?.length || 0);
+    if (!dbUrl) {
+      console.error("[HEALTH] CRITICAL: DATABASE_URL environment variable is not set!");
+    }
     globalForPrisma.prisma = new PrismaClient({
       datasources: {
         db: {
-          url: process.env.DATABASE_URL,
+          url: dbUrl,
         },
       },
     });
