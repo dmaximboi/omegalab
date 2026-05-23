@@ -66,28 +66,47 @@ export async function GET() {
     });
     const failedOrders = await getPrisma().order.count({ where: { status: "FAILED" } });
 
-    // Daily revenue for last 30 days
-    const dailyRevenue = await getPrisma().$queryRaw`
-      SELECT 
-        DATE("createdAt") as date,
-        SUM("totalAmount") as revenue,
-        COUNT(*) as orders
-      FROM "Order"
-      WHERE "status" = 'PAID' AND "createdAt" >= ${thirtyDaysAgo}
-      GROUP BY DATE("createdAt")
-      ORDER BY date ASC
-    `;
+    // Daily revenue for last 30 days - use Prisma instead of raw SQL for compatibility
+    const dailyRevenue = await getPrisma().order.findMany({
+      where: {
+        status: "PAID",
+        createdAt: { gte: thirtyDaysAgo },
+      },
+      select: {
+        createdAt: true,
+        totalAmount: true,
+      },
+      orderBy: { createdAt: "asc" },
+    });
 
-    // Revenue by status
-    const revenueByStatus = await getPrisma().$queryRaw`
-      SELECT 
-        "status",
-        SUM("totalAmount") as revenue,
-        COUNT(*) as count
-      FROM "Order"
-      WHERE "createdAt" >= ${thirtyDaysAgo}
-      GROUP BY "status"
-    `;
+    // Group by date
+    const dailyRevenueGrouped = dailyRevenue.reduce((acc, order) => {
+      const date = new Date(order.createdAt).toISOString().split('T')[0];
+      if (!acc[date]) {
+        acc[date] = { date, revenue: 0, orders: 0 };
+      }
+      acc[date].revenue += Number(order.totalAmount);
+      acc[date].orders += 1;
+      return acc;
+    }, {} as Record<string, { date: string; revenue: number; orders: number }>);
+
+    const dailyRevenueArray = Object.values(dailyRevenueGrouped);
+
+    // Revenue by status - use Prisma instead of raw SQL
+    const revenueByStatus = await getPrisma().order.groupBy({
+      by: ["status"],
+      where: {
+        createdAt: { gte: thirtyDaysAgo },
+      },
+      _sum: { totalAmount: true },
+      _count: true,
+    });
+
+    const revenueByStatusArray = revenueByStatus.map((item) => ({
+      status: item.status,
+      revenue: item._sum.totalAmount || 0,
+      count: item._count,
+    }));
 
     // Top products
     const topProducts = await getPrisma().orderItem.groupBy({
@@ -119,8 +138,8 @@ export async function GET() {
       paidOrders,
       pendingOrders,
       failedOrders,
-      dailyRevenue,
-      revenueByStatus,
+      dailyRevenue: dailyRevenueArray,
+      revenueByStatus: revenueByStatusArray,
       topProducts: topProductsWithNames,
     });
   } catch (error) {
