@@ -37,6 +37,9 @@ export async function GET() {
   const startTime = Date.now();
   
   try {
+    const dbUrl = process.env.DATABASE_URL;
+    console.log("[HEALTH] DATABASE_URL set:", !!dbUrl, "length:", dbUrl?.length || 0);
+    
     // Simple database ping to keep connection alive
     await getPrisma().$queryRaw`SELECT 1`;
     
@@ -66,6 +69,7 @@ export async function GET() {
         timestamp: new Date().toISOString(),
         database: "disconnected",
         error: "Database connection failed",
+        details: error instanceof Error ? error.message : String(error),
       },
       {
         status: 503,

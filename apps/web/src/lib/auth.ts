@@ -8,11 +8,17 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefi
 
 function getPrisma() {
   if (!globalForPrisma.prisma) {
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) {
+      console.error("[AUTH] CRITICAL: DATABASE_URL environment variable is not set!");
+    } else {
+      console.log("[AUTH] DATABASE_URL is set (length:", dbUrl.length, ")");
+    }
     globalForPrisma.prisma = new PrismaClient({
       log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
       datasources: {
         db: {
-          url: process.env.DATABASE_URL,
+          url: dbUrl,
         },
       },
     });
