@@ -82,7 +82,7 @@ export function ProductCard({ product }: { product: Product }) {
       {/* Actions */}
       <div className="flex gap-2 mt-4">
         <Link
-          href={`/catalogue/${product.id}`}
+          href={`/product/${product.id}`}
           className="btn btn-outline flex-1 text-sm"
         >
           <Eye size={16} />
