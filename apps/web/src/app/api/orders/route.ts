@@ -74,7 +74,7 @@ export async function POST(request: Request) {
 
     // Build a price lookup from DB — NEVER trust frontend prices
     // Using Decimal.js for precision (no floating point errors on money)
-    const priceMap = new Map(products.map((p: typeof products[number]) => [p.id, new Decimal(p.price.toString())]));
+    const priceMap = new Map<string, Decimal>(products.map((p: typeof products[number]) => [p.id, new Decimal(p.price.toString())]));
 
     // Compute server-side total with Decimal.js
     let serverTotal = new Decimal(0);
