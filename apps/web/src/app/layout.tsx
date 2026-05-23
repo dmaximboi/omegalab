@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import dynamic from "next/dynamic";
 import { Providers } from "@/components/Providers";
+import { ThemeProvider } from "@/lib/theme";
 import "./globals.css";
 
 // Dynamic import with SSR disabled to prevent hydration mismatch
@@ -114,11 +115,13 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className={`${inter.variable} min-h-screen bg-white antialiased font-sans`}>
-        <Providers>
-          {children}
-          <CookieConsent />
-        </Providers>
+      <body className={`${inter.variable} min-h-screen bg-white dark:bg-gray-900 antialiased font-sans`}>
+        <ThemeProvider>
+          <Providers>
+            {children}
+            <CookieConsent />
+          </Providers>
+        </ThemeProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `

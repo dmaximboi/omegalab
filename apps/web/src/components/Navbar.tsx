@@ -15,9 +15,12 @@ import {
   LogOut,
   User,
   ChevronDown,
-  ShoppingCart
+  ShoppingCart,
+  Moon,
+  Sun
 } from "lucide-react";
 import { cart } from "@/lib/cart";
+import { useTheme } from "@/lib/theme";
 
 const NAV_TABS = [
   { href: "/", label: "Home", icon: Home },
@@ -34,6 +37,7 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { theme, toggleTheme } = useTheme();
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = session?.user?.isAdmin === true;
@@ -117,6 +121,18 @@ export function Navbar() {
                   </span>
                 )}
               </Link>
+
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-full hover:bg-light-grey transition-colors"
+                aria-label="Toggle theme"
+              >
+                {theme === "dark" ? (
+                  <Sun className="text-navy" size={20} />
+                ) : (
+                  <Moon className="text-navy" size={20} />
+                )}
+              </button>
 
               {isLoading ? (
                 <div className="w-8 h-8 bg-light-grey rounded-full animate-pulse" />

@@ -21,6 +21,8 @@ import {
   Filter,
   Search,
   Download,
+  MessageSquare,
+  Send,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -181,6 +183,9 @@ export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [messageOrderId, setMessageOrderId] = useState<string | null>(null);
+  const [messageText, setMessageText] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
   const fetchRef = useRef(false);
 
   const fetchOrders = async (page = 1, status = "") => {
@@ -254,6 +259,29 @@ export default function AdminOrdersPage() {
     a.download = `orders-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const sendMessage = async () => {
+    if (!messageOrderId || !messageText.trim()) return;
+    setSendingMessage(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${messageOrderId}/message`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: messageText }),
+      });
+      if (res.ok) {
+        alert("Message sent successfully!");
+        setMessageText("");
+        setMessageOrderId(null);
+      } else {
+        alert("Failed to send message");
+      }
+    } catch {
+      alert("Failed to send message");
+    } finally {
+      setSendingMessage(false);
+    }
   };
 
   const formatDate = (date: string) => {
@@ -427,6 +455,18 @@ export default function AdminOrdersPage() {
                       </div>
                     </div>
 
+                    {/* Send Message to Customer */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-navy mb-2">Customer Communication</h4>
+                      <button
+                        onClick={() => setMessageOrderId(order.id)}
+                        className="flex items-center gap-2 px-4 py-2 bg-sky/10 text-sky rounded-lg hover:bg-sky/20 transition text-sm"
+                      >
+                        <MessageSquare size={16} />
+                        Send Message to Customer
+                      </button>
+                    </div>
+
                     {/* Transaction Timeline — 5 Steps */}
                     <div>
                       <h4 className="text-sm font-semibold text-navy mb-3">
@@ -545,6 +585,59 @@ export default function AdminOrdersPage() {
               {p}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Message Modal */}
+      {messageOrderId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold">Send Message to Customer</h3>
+                <button
+                  onClick={() => {
+                    setMessageOrderId(null);
+                    setMessageText("");
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <XCircle size={20} />
+                </button>
+              </div>
+              
+              <textarea
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                placeholder="Enter your message to the customer..."
+                className="w-full h-32 p-3 border rounded-lg focus:ring-2 focus:ring-sky/20 focus:border-sky/30 resize-none"
+              />
+              
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => {
+                    setMessageOrderId(null);
+                    setMessageText("");
+                  }}
+                  className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={sendMessage}
+                  disabled={sendingMessage || !messageText.trim()}
+                  className="flex-1 flex items-center justify-center gap-2 bg-sky text-white px-4 py-2 rounded-lg hover:bg-sky/90 transition disabled:opacity-50"
+                >
+                  {sendingMessage ? (
+                    <Loader2 className="animate-spin" size={16} />
+                  ) : (
+                    <Send size={16} />
+                  )}
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
