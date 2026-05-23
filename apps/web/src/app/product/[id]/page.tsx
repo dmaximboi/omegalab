@@ -6,8 +6,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { 
   ArrowLeft, Loader2, ChevronLeft, ChevronRight,
-  Package, ShoppingCart, Share2 
+  Package, ShoppingCart, Share2, Check 
 } from "lucide-react";
+import { cart } from "@/lib/cart";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,10 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [error, setError] = useState("");
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
 
   useEffect(() => {
     fetchProduct();
@@ -67,9 +72,66 @@ export default function ProductDetailPage() {
     }
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const minSwipeDistance = 50;
+
+    if (distance > minSwipeDistance) {
+      nextImage();
+    } else if (distance < -minSwipeDistance) {
+      prevImage();
+    }
+  };
+
   const addToCart = () => {
-    // TODO: Implement cart functionality
-    console.log("Add to cart:", product?.id);
+    if (!product || !product.images || product.images.length === 0) return;
+    
+    setAddingToCart(true);
+    cart.addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.images[0].url,
+    });
+    
+    // Trigger storage event to update navbar
+    window.dispatchEvent(new Event("storage"));
+    
+    setAddingToCart(false);
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2000);
+  };
+
+  const shareProduct = async () => {
+    if (!product) return;
+    
+    const shareData = {
+      title: product.name,
+      text: `Check out ${product.name} for ₦${product.price.toLocaleString()}`,
+      url: `${window.location.origin}/product/${product.id}`,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(shareData.url);
+        alert("Link copied to clipboard!");
+      }
+    } catch (error) {
+      console.error("Share failed:", error);
+    }
   };
 
   if (loading) {
@@ -121,7 +183,11 @@ export default function ProductDetailPage() {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="relative aspect-square bg-white rounded-lg border overflow-hidden">
+            <div className="relative aspect-square bg-white rounded-lg border overflow-hidden"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               {currentImage ? (
                 <Image
                   src={currentImage.url}
@@ -207,12 +273,31 @@ export default function ProductDetailPage() {
             <div className="flex gap-3">
               <button
                 onClick={addToCart}
-                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+                disabled={addingToCart}
+                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg transition ${
+                  addedToCart 
+                    ? "bg-green-600 hover:bg-green-700 text-white" 
+                    : "bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                }`}
               >
-                <ShoppingCart size={20} />
-                Add to Cart
+                {addedToCart ? (
+                  <>
+                    <Check size={20} />
+                    Added to Cart
+                  </>
+                ) : addingToCart ? (
+                  <Loader2 className="animate-spin" size={20} />
+                ) : (
+                  <>
+                    <ShoppingCart size={20} />
+                    Add to Cart
+                  </>
+                )}
               </button>
-              <button className="p-3 border rounded-lg hover:bg-gray-50 transition">
+              <button
+                onClick={shareProduct}
+                className="p-3 border rounded-lg hover:bg-gray-50 transition"
+              >
                 <Share2 size={20} />
               </button>
             </div>

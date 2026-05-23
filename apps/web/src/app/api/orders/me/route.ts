@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
@@ -22,19 +22,24 @@ function getPrisma() {
   return globalForPrisma.prisma;
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const order = await getPrisma().order.findUnique({
-      where: { id: params.id },
+    const user = await getPrisma().user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const orders = await getPrisma().order.findMany({
+      where: { userId: user.id },
       include: {
         items: {
           include: {
@@ -43,6 +48,7 @@ export async function GET(
                 id: true,
                 name: true,
                 images: {
+                  take: 1,
                   select: { url: true },
                 },
               },
@@ -50,32 +56,12 @@ export async function GET(
           },
         },
       },
+      orderBy: { createdAt: "desc" },
     });
 
-    if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-
-    // Only allow user to see their own orders (unless admin)
-    if (order.userId !== session.user.id && !session.user.isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    return NextResponse.json({
-      id: order.id,
-      totalAmount: Number(order.totalAmount),
-      status: order.status,
-      txRef: order.txRef,
-      createdAt: order.createdAt.toISOString(),
-      items: order.items.map((item: any) => ({
-        id: item.id,
-        quantity: item.quantity,
-        unitPrice: Number(item.unitPrice),
-        product: item.product,
-      })),
-    });
+    return NextResponse.json({ orders });
   } catch (error) {
-    console.error("[ORDER] Fetch error:", error);
-    return NextResponse.json({ error: "Failed to fetch order" }, { status: 500 });
+    console.error("[ORDERS] Fetch error:", error);
+    return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
   }
 }
