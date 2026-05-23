@@ -42,6 +42,33 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     fetchOrder();
+    
+    // Set up SSE connection for real-time updates
+    let eventSource: EventSource | null = null;
+    
+    if (params.id) {
+      eventSource = new EventSource(`/api/orders/${params.id}/events`);
+      
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "status" && order) {
+            setOrder((prev) => ({ ...prev, status: data.status, paymentVerified: data.paymentVerified }));
+          }
+        } catch (error) {
+          console.error("Failed to parse SSE message:", error);
+        }
+      };
+      
+      eventSource.onerror = (error) => {
+        console.error("SSE error:", error);
+        eventSource?.close();
+      };
+    }
+    
+    return () => {
+      eventSource?.close();
+    };
   }, [params.id]);
 
   const fetchOrder = async () => {
