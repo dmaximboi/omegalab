@@ -148,7 +148,7 @@ export const authOptions: NextAuthOptions = {
 
       // Create or update user in database
       try {
-        const existingUser = await pma.us.findUnique({
+        const existingUser = await getPrisma().user.findUnique({
           where: { email },
           select: { id: true, failedLogins: true, lockedUntil: true },
         });
