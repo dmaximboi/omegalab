@@ -53,7 +53,7 @@ export default function OrderDetailPage() {
         try {
           const data = JSON.parse(event.data);
           if (data.type === "status" && order) {
-            setOrder((prev) => ({ ...prev, status: data.status, paymentVerified: data.paymentVerified }));
+            setOrder((prev) => prev ? { ...prev, status: data.status, paymentVerified: data.paymentVerified } : prev);
           }
         } catch (error) {
           console.error("Failed to parse SSE message:", error);
