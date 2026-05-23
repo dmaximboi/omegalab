@@ -159,7 +159,7 @@ export const authOptions: NextAuthOptions = {
           return false;
         }
 
-        await pma.us.upsert({
+        await getPrisma().user.upsert({
           where: { email },
           update: {
             name: user.name || undefined,
