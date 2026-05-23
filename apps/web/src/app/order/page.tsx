@@ -29,10 +29,31 @@ export default function OrderPage() {
     address: "",
   });
 
+  // Load cart and form data from localStorage on mount
   useEffect(() => {
-    setItems(cart.getItems());
+    const savedItems = cart.getItems();
+    setItems(savedItems);
+    
+    // Load saved form data
+    const savedFormData = localStorage.getItem("checkout_form");
+    if (savedFormData) {
+      try {
+        const parsed = JSON.parse(savedFormData);
+        setFormData(parsed);
+      } catch {
+        // Ignore parse errors
+      }
+    }
+    
     setLoading(false);
   }, []);
+
+  // Save form data to localStorage on change
+  useEffect(() => {
+    if (!loading) {
+      localStorage.setItem("checkout_form", JSON.stringify(formData));
+    }
+  }, [formData, loading]);
 
   const handleQuantityChange = (id: string, delta: number) => {
     const item = items.find((i) => i.id === id);
@@ -103,6 +124,7 @@ export default function OrderPage() {
                 body: JSON.stringify({
                   transaction_id: response.transaction_id,
                   orderId: data.orderId,
+                  paymentToken: data.paymentToken,
                 }),
               });
 

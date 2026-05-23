@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { 
   ArrowLeft, Package, Loader2, CheckCircle, 
-  Clock, XCircle, Copy, Download 
+  Clock, XCircle, Copy, Download, RefreshCw 
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +62,20 @@ export default function OrderDetailPage() {
     if (order?.txRef) {
       navigator.clipboard.writeText(order.txRef);
       alert("Transaction reference copied!");
+    }
+  };
+
+  const checkStatus = async () => {
+    if (!order) return;
+    try {
+      const res = await fetch(`/api/orders/${order.id}/status`);
+      if (res.ok) {
+        const data = await res.json();
+        setOrder({ ...order, status: data.status });
+        alert(`Current status: ${data.status}`);
+      }
+    } catch (error) {
+      alert("Failed to check status");
     }
   };
 
@@ -187,6 +201,16 @@ export default function OrderDetailPage() {
                   <Copy size={16} />
                 </button>
               </div>
+            </div>
+            <div className="flex items-center justify-between text-sm mt-2">
+              <span className="text-gray-500">Check Status:</span>
+              <button
+                onClick={checkStatus}
+                className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
+              >
+                <RefreshCw size={16} />
+                Refresh
+              </button>
             </div>
           </div>
         </div>

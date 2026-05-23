@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { 
   ArrowLeft, Package, Loader2, CheckCircle, 
-  Clock, XCircle, ChevronRight 
+  Clock, XCircle, ChevronRight, LogIn 
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +33,7 @@ interface Order {
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -41,12 +42,21 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     try {
       const res = await fetch("/api/orders/me");
+      if (res.status === 401) {
+        setAuthenticated(false);
+        setLoading(false);
+        return;
+      }
       if (res.ok) {
+        setAuthenticated(true);
         const data = await res.json();
         setOrders(data.orders || []);
+      } else {
+        setAuthenticated(false);
       }
     } catch (error) {
       console.error("Failed to fetch orders:", error);
+      setAuthenticated(false);
     } finally {
       setLoading(false);
     }
@@ -118,6 +128,19 @@ export default function OrdersPage() {
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="animate-spin text-blue-600" size={32} />
+          </div>
+        ) : authenticated === false ? (
+          <div className="text-center py-12 bg-white rounded-lg border">
+            <LogIn className="mx-auto text-gray-300 mb-4" size={48} />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Sign In Required</h3>
+            <p className="text-gray-500 mb-4">Please sign in to view your orders</p>
+            <Link
+              href="/login?callbackUrl=/orders"
+              className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+            >
+              <LogIn size={18} />
+              Sign In
+            </Link>
           </div>
         ) : orders.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border">

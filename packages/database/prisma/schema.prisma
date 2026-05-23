@@ -79,6 +79,8 @@ model Order {
   verifiedBy      String?
   ipAddress       String?
   userAgent       String?
+  paymentToken    String?     @unique // Anti-duplication token
+  tokenExpiresAt  DateTime?   // Token expiry (2 hours)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 }

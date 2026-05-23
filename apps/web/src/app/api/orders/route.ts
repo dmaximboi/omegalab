@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import Decimal from "decimal.js";
 import { generateTxRef, generateReceiptHash } from "@/lib/flutterwave";
+import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -118,6 +119,8 @@ export async function POST(request: Request) {
 
     // Generate cryptographically secure identifiers
     const txRef = generateTxRef();
+    const paymentToken = crypto.randomBytes(32).toString('hex');
+    const tokenExpiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
 
     // Idempotency: check if same user+items already has a PENDING order in last 5 min
     const recentOrder = await getPrisma().order.findFirst({
@@ -134,6 +137,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         orderId: recentOrder.id,
         txRef: recentOrder.txRef,
+        paymentToken: (recentOrder as any).paymentToken,
         amount: totalAsNumber,
       });
     }
@@ -164,6 +168,10 @@ export async function POST(request: Request) {
         status: "INITIATED",
         ipAddress,
         userAgent,
+        ...(process.env.NODE_ENV === 'development' ? {} : {
+          paymentToken,
+          tokenExpiresAt,
+        }),
         items: {
           create: orderItems,
         },

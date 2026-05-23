@@ -15,7 +15,8 @@ import {
   TrendingUp,
   Loader2,
   ChevronRight,
-  Home
+  Home,
+  Activity
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,8 @@ const ADMIN_TABS = [
   { id: "products", label: "Products", icon: Package, href: "/admin/products" },
   { id: "orders", label: "Orders", icon: ShoppingCart, href: "/admin/orders" },
   { id: "messages", label: "Messages", icon: MessageSquare, href: "/admin/messages" },
+  { id: "transactions", label: "Transactions", icon: Activity, href: "/admin/transactions" },
+  { id: "users", label: "Users", icon: Users, href: "/admin/users" },
   { id: "verify", label: "Verify QR", icon: QrCode, href: "/admin/verify-qr" },
 ];
 

@@ -31,7 +31,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { transaction_id, orderId } = body;
+    const { transaction_id, orderId, paymentToken } = body;
     // NOTE: we do NOT use tx_ref from frontend — we match from DB
 
     if (!transaction_id || !orderId) {
@@ -46,6 +46,18 @@ export async function POST(request: Request) {
     if (!order) {
       await logPayment({ txRef: null, flwRef: String(transaction_id), status: "order_not_found", ipAddress });
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    // Check if token is provided and valid (if schema has been updated)
+    if (paymentToken && (order as any).paymentToken && (order as any).paymentToken !== paymentToken) {
+      await logPayment({ orderId, txRef: order.txRef, flwRef: String(transaction_id), status: "step:FAILED:invalid_token", ipAddress });
+      return NextResponse.json({ error: "Invalid payment token" }, { status: 403 });
+    }
+
+    // Check if token has expired (if schema has been updated)
+    if ((order as any).tokenExpiresAt && new Date() > (order as any).tokenExpiresAt) {
+      await logPayment({ orderId, txRef: order.txRef, flwRef: String(transaction_id), status: "step:FAILED:token_expired", ipAddress });
+      return NextResponse.json({ error: "Payment token has expired" }, { status: 400 });
     }
 
     // Prevent double verification (idempotent)
