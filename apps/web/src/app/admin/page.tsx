@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Package,
@@ -127,10 +128,15 @@ export default function AdminDashboard() {
             const isActive = activeTab === tab.id;
             const isNavigating = navigating === tab.id;
             return (
-              <button
+              <motion.button
                 key={tab.id}
                 onClick={(e) => handleTabClick(e, tab.id, tab.href)}
                 disabled={isNavigating}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.2 }}
                 className={`
                   w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all
                   ${isActive 
@@ -140,16 +146,40 @@ export default function AdminDashboard() {
                   ${isNavigating ? "opacity-50 cursor-not-allowed" : ""}
                 `}
               >
-                {isNavigating ? (
-                  <Loader2 className="animate-spin" size={20} />
-                ) : (
-                  <tab.icon size={20} />
-                )}
+                <AnimatePresence mode="wait">
+                  {isNavigating ? (
+                    <motion.div
+                      key="loading"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <Loader2 className="animate-spin" size={20} />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="icon"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <tab.icon size={20} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 <span className="font-medium text-sm">{tab.label}</span>
-                {isActive && !isNavigating && (
-                  <ChevronRight size={16} className="ml-auto" />
-                )}
-              </button>
+                <AnimatePresence>
+                  {isActive && !isNavigating && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
+                    >
+                      <ChevronRight size={16} className="ml-auto" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
             );
           })}
         </nav>

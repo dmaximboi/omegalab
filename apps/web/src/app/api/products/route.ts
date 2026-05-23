@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
+// Cache for 5 minutes on CDN, 10 minutes on browser, stale for 30 minutes
 export const dynamic = "force-dynamic";
+export const revalidate = 300; // 5 minutes
 
 // Lazy Prisma client - only instantiated when first accessed
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };

@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { 
   ArrowLeft, Package, Loader2, CheckCircle, 
-  Clock, XCircle, Copy, Download, RefreshCw 
+  Clock, XCircle, Copy, Download, RefreshCw, QrCode 
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +37,8 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [receipt, setReceipt] = useState<any>(null);
+  const [showReceipt, setShowReceipt] = useState(false);
 
   useEffect(() => {
     fetchOrder();
@@ -76,6 +78,54 @@ export default function OrderDetailPage() {
       }
     } catch (error) {
       alert("Failed to check status");
+    }
+  };
+
+  const fetchReceipt = async () => {
+    if (!order) return;
+    try {
+      const res = await fetch(`/api/orders/${order.id}/receipt`);
+      if (res.ok) {
+        const data = await res.json();
+        setReceipt(data);
+        setShowReceipt(true);
+      } else {
+        alert("Failed to load receipt");
+      }
+    } catch (error) {
+      alert("Failed to load receipt");
+    }
+  };
+
+  const downloadReceipt = () => {
+    if (!receipt) return;
+    const receiptWindow = window.open("", "_blank");
+    if (receiptWindow) {
+      receiptWindow.document.write(`
+        <html>
+          <head><title>Receipt - Order #${order?.id.slice(-8).toUpperCase()}</title></head>
+          <body style="font-family: Arial, sans-serif; padding: 40px; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #1e293b;">De-Omega Labaffairs</h1>
+            <h2 style="color: #64748b;">Order Receipt</h2>
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e2e8f0;">
+            <p><strong>Order ID:</strong> #${receipt.order.id.slice(-8).toUpperCase()}</p>
+            <p><strong>Date:</strong> ${new Date(receipt.order.createdAt).toLocaleString()}</p>
+            <p><strong>Status:</strong> ${receipt.order.status}</p>
+            <p><strong>Total:</strong> ₦${receipt.order.totalAmount.toLocaleString()}</p>
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e2e8f0;">
+            <h3>Items</h3>
+            ${receipt.order.items.map((item: any) => `
+              <p>${item.product} × ${item.quantity} - ₦${(item.unitPrice * item.quantity).toLocaleString()}</p>
+            `).join('')}
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e2e8f0;">
+            <div style="text-align: center; margin-top: 30px;">
+              <img src="${receipt.qrCode}" alt="QR Code" style="width: 200px; height: 200px;">
+              <p style="margin-top: 10px; color: #64748b; font-size: 12px;">Scan to verify order</p>
+            </div>
+          </body>
+        </html>
+      `);
+      receiptWindow.document.close();
     }
   };
 
@@ -186,6 +236,22 @@ export default function OrderDetailPage() {
               <p className="text-3xl font-bold text-blue-600">
                 ₦{order.totalAmount.toLocaleString()}
               </p>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={checkStatus}
+                  className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+                >
+                  <RefreshCw size={14} />
+                  Refresh
+                </button>
+                <button
+                  onClick={fetchReceipt}
+                  className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+                >
+                  <QrCode size={14} />
+                  Receipt
+                </button>
+              </div>
             </div>
           </div>
 
@@ -280,13 +346,86 @@ export default function OrderDetailPage() {
             Continue Shopping
           </Link>
           {order.status === "PAID" && (
-            <button className="flex items-center justify-center gap-2 px-6 py-3 border rounded-lg hover:bg-gray-50 transition">
+            <button 
+              onClick={fetchReceipt}
+              className="flex items-center justify-center gap-2 px-6 py-3 border rounded-lg hover:bg-gray-50 transition"
+            >
               <Download size={20} />
               Download Receipt
             </button>
           )}
         </div>
       </main>
+
+      {/* Receipt Modal */}
+      {showReceipt && receipt && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold">Order Receipt</h3>
+                <button
+                  onClick={() => setShowReceipt(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <XCircle size={20} />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold text-navy">De-Omega Labaffairs</h2>
+                  <p className="text-sm text-navy/60">Order Receipt</p>
+                </div>
+                
+                <div className="border-t pt-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Order ID:</span>
+                    <span className="font-medium">#{receipt.order.id.slice(-8).toUpperCase()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Date:</span>
+                    <span className="font-medium">{new Date(receipt.order.createdAt).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Status:</span>
+                    <span className={`font-medium ${
+                      receipt.order.status === 'PAID' ? 'text-green-600' : 'text-yellow-600'
+                    }`}>{receipt.order.status}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total:</span>
+                    <span className="font-bold text-blue-600">₦{receipt.order.totalAmount.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold mb-2">Items</h4>
+                  {receipt.order.items.map((item: any, idx: number) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <span>{item.product} × {item.quantity}</span>
+                      <span>₦{(item.unitPrice * item.quantity).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t pt-4 text-center">
+                  <img src={receipt.qrCode} alt="QR Code" className="mx-auto w-48 h-48" />
+                  <p className="text-sm text-gray-500 mt-2">Scan to verify order</p>
+                </div>
+
+                <button
+                  onClick={downloadReceipt}
+                  className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                >
+                  <Download size={18} />
+                  Download Receipt
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
