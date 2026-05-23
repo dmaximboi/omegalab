@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     ]);
 
     // Get transaction logs for each order
-    const orderIds = orders.map((o) => o.id);
+    const orderIds = orders.map((o: typeof orders[number]) => o.id);
     const logs = await prisma.paymentLog.findMany({
       where: { orderId: { in: orderIds } },
       orderBy: { createdAt: "asc" },
