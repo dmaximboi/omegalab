@@ -56,13 +56,13 @@ export default function ProductDetailPage() {
   };
 
   const nextImage = () => {
-    if (product && product.images.length > 0) {
+    if (product && product.images && product.images.length > 0) {
       setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
     }
   };
 
   const prevImage = () => {
-    if (product && product.images.length > 0) {
+    if (product && product.images && product.images.length > 0) {
       setCurrentImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length);
     }
   };
@@ -98,7 +98,7 @@ export default function ProductDetailPage() {
     );
   }
 
-  const currentImage = product.images[currentImageIndex];
+  const currentImage = product.images && product.images.length > 0 ? product.images[currentImageIndex] : null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -137,7 +137,7 @@ export default function ProductDetailPage() {
               )}
 
               {/* Navigation Arrows */}
-              {product.images.length > 1 && (
+              {product.images && product.images.length > 1 && (
                 <>
                   <button
                     onClick={prevImage}
@@ -155,7 +155,7 @@ export default function ProductDetailPage() {
               )}
 
               {/* Image Counter */}
-              {product.images.length > 1 && (
+              {product.images && product.images.length > 1 && (
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/50 text-white text-sm rounded-full">
                   {currentImageIndex + 1} / {product.images.length}
                 </div>
@@ -163,7 +163,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Thumbnail Strip */}
-            {product.images.length > 1 && (
+            {product.images && product.images.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {product.images.map((image, index) => (
                   <button
