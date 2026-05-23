@@ -39,18 +39,17 @@ export async function GET(
     }
 
     return NextResponse.json({
-      product: {
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        price: parseFloat(product.price.toString()),
-        category: product.category,
-        images: product.images.map((img: typeof product.images[number]) => ({
-          id: img.id,
-          url: img.url,
-          order: img.order,
-        })),
-      },
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: parseFloat(product.price.toString()),
+      category: product.category,
+      isActive: product.isActive,
+      images: product.images.map((img: typeof product.images[number]) => ({
+        id: img.id,
+        url: img.url,
+        order: img.order,
+      })),
     }, {
       headers: {
         "Cache-Control": "public, max-age=300, s-maxage=600",

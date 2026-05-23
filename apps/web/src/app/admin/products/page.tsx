@@ -142,6 +142,13 @@ export default function AdminProductsPage() {
                   </p>
                   <div className="flex gap-2 mt-4">
                     <Link
+                      href={`/product/${product.id}`}
+                      className="flex-1 flex items-center justify-center gap-1 py-2 border rounded-lg hover:bg-gray-50 transition text-sm"
+                    >
+                      <Eye size={16} />
+                      View
+                    </Link>
+                    <Link
                       href={`/admin/products/${product.id}`}
                       className="flex-1 flex items-center justify-center gap-1 py-2 border rounded-lg hover:bg-gray-50 transition text-sm"
                     >
