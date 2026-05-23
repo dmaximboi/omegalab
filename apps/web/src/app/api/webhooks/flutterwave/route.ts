@@ -3,6 +3,8 @@ import { PrismaClient } from "@prisma/client";
 import Decimal from "decimal.js";
 import { verifyFlutterwavePayment, verifyWebhookSignature } from "@/lib/flutterwave";
 
+export const dynamic = "force-dynamic";
+
 // Singleton Prisma client
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient({
