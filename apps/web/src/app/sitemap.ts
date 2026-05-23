@@ -57,7 +57,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
 
     productPages = products
-      .filter((p) => p.slug)
+      .filter((p: typeof products[number]) => p.slug)
       .map((product: typeof products[number]) => ({
         url: `${BASE_URL}/catalogue/${product.slug}`,
         lastModified: product.updatedAt,
