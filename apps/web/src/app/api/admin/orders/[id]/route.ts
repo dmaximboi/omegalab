@@ -164,10 +164,10 @@ function getStepExplanation(step: string): string {
 
 function getSecurityFlags(timeline: Array<{ step: string; ipAddress: string | null }>): string[] {
   const flags: string[] = [];
-  const hasFailure = timeline.some((t) => t.step.includes("FAILED"));
-  const hasMismatch = timeline.some((t) => t.step.includes("mismatch"));
+  const hasFailure = timeline.some((t: typeof timeline[number]) => t.step.includes("FAILED"));
+  const hasMismatch = timeline.some((t: typeof timeline[number]) => t.step.includes("mismatch"));
   const multipleIps =
-    new Set(timeline.filter((t) => t.ipAddress).map((t: typeof timeline[number]) => t.ipAddress)).size > 1;
+    new Set(timeline.filter((t: typeof timeline[number]) => t.ipAddress).map((t: typeof timeline[number]) => t.ipAddress)).size > 1;
 
   if (hasMismatch) flags.push("SECURITY_ALERT: Mismatch detected — possible tampering");
   if (multipleIps) flags.push("NOTICE: Multiple IP addresses detected in transaction lifecycle");

@@ -64,7 +64,7 @@ export const cart = {
     // Prevent cart overflow
     if (items.length >= MAX_CART_ITEMS) return;
 
-    const existingItem = items.find((item) => item.id === product.id);
+    const existingItem = items.find((item: CartItem) => item.id === product.id);
 
     if (existingItem) {
       if (existingItem.quantity >= MAX_QUANTITY_PER_ITEM) return;
@@ -83,7 +83,7 @@ export const cart = {
   },
 
   removeItem(id: string) {
-    const items = this.getItems().filter((item) => item.id !== id);
+    const items = this.getItems().filter((item: CartItem) => item.id !== id);
     this.saveItems(items);
   },
 
@@ -91,7 +91,7 @@ export const cart = {
     if (quantity < 1 || quantity > MAX_QUANTITY_PER_ITEM || !Number.isInteger(quantity)) return;
 
     const items = this.getItems();
-    const item = items.find((item) => item.id === id);
+    const item = items.find((item: CartItem) => item.id === id);
 
     if (item) {
       item.quantity = Math.min(MAX_QUANTITY_PER_ITEM, Math.max(1, Math.floor(quantity)));
