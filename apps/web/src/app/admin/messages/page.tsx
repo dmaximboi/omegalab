@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { 
-  ArrowLeft, Mail, MailOpen, Trash2, 
+import {
+  ArrowLeft, Mail, MailOpen, Trash2,
   Loader2, MessageSquare, Clock, User
 } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 interface Message {
   id: string;
