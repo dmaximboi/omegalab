@@ -6,6 +6,8 @@ import { ArrowLeft, X, Loader2, Upload } from "lucide-react";
 import { UploadButton } from "@uploadthing/react";
 import type { OurFileRouter } from "@/lib/uploadthing";
 
+export const dynamic = "force-dynamic";
+
 export default function NewProductPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

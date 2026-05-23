@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { QrCode, Search, CheckCircle, XCircle, Loader2, Shield, AlertTriangle } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 interface VerifyResult {
   verified: boolean;
   order?: {

@@ -2,6 +2,8 @@ import { redirect, notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 /**
  * ADMIN LAYOUT - Server-side protection
  * This runs on the server BEFORE any admin page renders
