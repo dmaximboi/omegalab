@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 // Hardcoded public config - NOT from environment variables
 // This prevents any possibility of env variable injection
 const PUBLIC_CONFIG = {
