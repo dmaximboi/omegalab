@@ -190,7 +190,10 @@ export async function POST(request: Request) {
     return NextResponse.json({
       orderId: order.id,
       txRef,
+      paymentToken: (order as any).paymentToken,
       amount: totalAsNumber,
+      userEmail: guestUser.email,
+      userName: guestUser.name,
     });
   } catch (error) {
     console.error("[ORDER] Create error:", error);

@@ -25,11 +25,43 @@ const PROTECTED_ROUTES = ["/admin"];
 const PROTECTED_API_ROUTES = ["/api/admin"];
 
 // Rate limit tracking (in production, use Redis/Upstash)
-const rateLimitMap = new Map<string, { count: number; timestamp: number }>();
+const rateLimitMap = new Map<string, { count: number; timestamp: number; blockedUntil?: number }>();
+const suspiciousIps = new Set<string>();
+
+// Advanced security: IP reputation check
+const SUSPICIOUS_IP_PATTERNS = [
+  /bot/i,
+  /crawl/i,
+  /spider/i,
+  /scan/i,
+  /test/i,
+];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const response = NextResponse.next();
+
+  // ============================================
+  // ADVANCED SECURITY: IP-based blocking
+  // ============================================
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || 
+             request.headers.get("x-real-ip") || 
+             "unknown";
+  
+  // Check if IP is in suspicious list
+  if (suspiciousIps.has(ip)) {
+    console.warn(`[SECURITY] Blocked suspicious IP: ${ip}`);
+    return new NextResponse(null, { status: 403 });
+  }
+
+  // Check IP patterns
+  for (const pattern of SUSPICIOUS_IP_PATTERNS) {
+    if (pattern.test(ip)) {
+      suspiciousIps.add(ip);
+      console.warn(`[SECURITY] Added IP to suspicious list: ${ip}`);
+      return new NextResponse(null, { status: 403 });
+    }
+  }
 
   // ============================================
   // SECURITY HEADERS (Applied to ALL responses)
@@ -93,26 +125,41 @@ export async function middleware(request: NextRequest) {
   // RATE LIMITING FOR API ROUTES
   // ============================================
   if (pathname.startsWith("/api/")) {
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || 
-               request.headers.get("x-real-ip") || 
-               "unknown";
-    
     const key = `${ip}:${pathname}`;
     const now = Date.now();
     const windowMs = 60000; // 1 minute
-    const maxRequests = pathname.includes("/auth/") ? 10 : 30; // Stricter for auth
+    const maxRequests = pathname.includes("/auth/") ? 5 : 20; // Stricter for auth
+    const blockDuration = 15 * 60 * 1000; // 15 minutes block
 
     const record = rateLimitMap.get(key);
     
+    // Check if IP is currently blocked
+    if (record?.blockedUntil && now < record.blockedUntil) {
+      return new NextResponse(
+        JSON.stringify({ error: "Too many requests. Please try again later." }),
+        { 
+          status: 429, 
+          headers: { 
+            "Content-Type": "application/json",
+            "Retry-After": String(Math.ceil((record.blockedUntil - now) / 1000)),
+          } 
+        }
+      );
+    }
+    
     if (record && now - record.timestamp < windowMs) {
       if (record.count >= maxRequests) {
+        // Block the IP for excessive requests
+        record.blockedUntil = now + blockDuration;
+        suspiciousIps.add(ip);
+        console.warn(`[SECURITY] Blocked IP for rate limit: ${ip}`);
         return new NextResponse(
           JSON.stringify({ error: "Too many requests. Please try again later." }),
           { 
             status: 429, 
             headers: { 
               "Content-Type": "application/json",
-              "Retry-After": String(Math.ceil((record.timestamp + windowMs - now) / 1000)),
+              "Retry-After": String(blockDuration / 1000),
             } 
           }
         );

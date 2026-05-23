@@ -201,8 +201,8 @@ export default function AdminTransactionsPage() {
                             const details = {
                               status: log.status,
                               responseCode: log.responseCode,
-                              responseData: log.responseData,
-                              webhookData: log.webhookData,
+                              amount: log.amount,
+                              timestamp: log.createdAt,
                             };
                             alert(JSON.stringify(details, null, 2));
                           }}

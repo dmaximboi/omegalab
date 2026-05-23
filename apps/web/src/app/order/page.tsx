@@ -96,57 +96,8 @@ export default function OrderPage() {
 
       const data = await res.json();
 
-      // Launch Flutterwave Inline checkout — use SERVER amount, not client
-      if (window.FlutterwaveCheckout) {
-        window.FlutterwaveCheckout({
-          public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
-          tx_ref: data.txRef,
-          amount: data.amount, // SERVER-COMPUTED amount — never trust client
-          currency: "NGN",
-          payment_options: "card,mobilemoney,ussd,banktransfer",
-          customer: {
-            email: formData.email,
-            phone_number: formData.phone,
-            name: formData.name,
-          },
-          customizations: {
-            title: "De-Omega Labaffairs",
-            description: `Order #${data.orderId.slice(-8).toUpperCase()}`,
-            logo: "https://i.ibb.co/LdGYh0t5/IMG-20260516-WA0025.jpg",
-          },
-          callback: async (response: any) => {
-            // Verify payment on server — only send transaction_id and orderId
-            // tx_ref is matched from DB server-side, not from frontend
-            try {
-              const verifyRes = await fetch("/api/orders/verify", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  transaction_id: response.transaction_id,
-                  orderId: data.orderId,
-                  paymentToken: data.paymentToken,
-                }),
-              });
-
-              if (verifyRes.ok) {
-                cart.clear();
-                window.dispatchEvent(new Event("storage"));
-                router.push(`/order/success?id=${data.orderId}`);
-              } else {
-                setError("Payment verification failed. Please contact support.");
-              }
-            } catch {
-              setError("Could not verify payment. Please contact support with your transaction reference.");
-            }
-          },
-          onclose: () => {
-            isSubmitting.current = false;
-            setCheckingOut(false);
-          },
-        });
-      } else {
-        setError("Payment system is loading. Please try again in a moment.");
-      }
+      // Redirect to dedicated payment processing page
+      router.push(`/payment/${data.orderId}`);
     } catch (err: any) {
       setError(err.message || "Could not create order. Please try again.");
     } finally {
