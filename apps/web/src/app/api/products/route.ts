@@ -22,7 +22,7 @@ export async function GET() {
     });
 
     // Transform to match frontend expected format
-    const transformedProducts = products.map((product) => ({
+    const transformedProducts = products.map((product: typeof products[number]) => ({
       id: product.id,
       slug: product.slug,
       name: product.name,
@@ -30,7 +30,7 @@ export async function GET() {
       price: parseFloat(product.price.toString()),
       category: product.category,
       image: product.images[0]?.url || "", // Use first image as main image
-      images: product.images.map((img) => img.url),
+      images: product.images.map((img: typeof product.images[number]) => img.url),
     }));
 
     return NextResponse.json({ products: transformedProducts }, {

@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       orderNumber: order.txRef,
       receiptHash: order.receiptHash,
       customerName: order.user?.name || "Customer",
-      items: order.items.map((item) => ({
+      items: order.items.map((item: typeof order.items[number]) => ({
         name: item.product?.name || "Product",
         quantity: item.quantity,
         price: Number(item.unitPrice),

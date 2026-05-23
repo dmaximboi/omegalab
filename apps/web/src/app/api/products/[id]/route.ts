@@ -34,7 +34,7 @@ export async function GET(
         description: product.description,
         price: parseFloat(product.price.toString()),
         category: product.category,
-        images: product.images.map((img) => ({
+        images: product.images.map((img: typeof product.images[number]) => ({
           id: img.id,
           url: img.url,
           order: img.order,

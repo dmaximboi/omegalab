@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
           month: "long",
           year: "numeric",
         }),
-        items: order.items.map((item) => ({
+        items: order.items.map((item: typeof order.items[number]) => ({
           name: item.product?.name || "Product",
           quantity: item.quantity,
         })),

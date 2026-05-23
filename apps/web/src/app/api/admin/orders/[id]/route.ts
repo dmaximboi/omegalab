@@ -103,7 +103,7 @@ export async function GET(
         email: order.user.email,
         memberSince: order.user.createdAt,
       },
-      items: order.items.map((item) => ({
+      items: order.items.map((item: typeof order.items[number]) => ({
         productId: item.product.id,
         productName: item.product.name,
         category: item.product.category,

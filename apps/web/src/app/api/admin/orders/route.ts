@@ -55,7 +55,7 @@ export async function GET(request: Request) {
       logsByOrder.set(log.orderId, existing);
     }
 
-    const enrichedOrders = orders.map((order) => ({
+    const enrichedOrders = orders.map((order: typeof orders[number]) => ({
       id: order.id,
       txRef: order.txRef,
       status: order.status,
@@ -68,12 +68,12 @@ export async function GET(request: Request) {
         name: order.user.name,
         email: order.user.email,
       },
-      items: order.items.map((item) => ({
+      items: order.items.map((item: typeof order.items[number]) => ({
         product: item.product.name,
         quantity: item.quantity,
         unitPrice: parseFloat(item.unitPrice.toString()),
       })),
-      transactionSteps: (logsByOrder.get(order.id) || []).map((log) => ({
+      transactionSteps: (logsByOrder.get(order.id) || []).map((log: typeof logs[number]) => ({
         step: log.status,
         timestamp: log.createdAt,
         ip: log.ipAddress,
