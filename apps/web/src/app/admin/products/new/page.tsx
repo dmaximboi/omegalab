@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default function NewProductPage() {
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     name: "",
@@ -19,7 +20,13 @@ export default function NewProductPage() {
     images: [] as string[],
   });
 
+  const handleUploadBegin = () => {
+    setUploading(true);
+    setError("");
+  };
+
   const handleUploadComplete = (res: any) => {
+    setUploading(false);
     // Handle multiple file uploads
     const uploadedUrls = res.map((file: any) => file.url);
     if (uploadedUrls.length > 0) {
@@ -28,6 +35,11 @@ export default function NewProductPage() {
         images: [...prev.images, ...uploadedUrls],
       }));
     }
+  };
+
+  const handleUploadError = (error: Error) => {
+    setUploading(false);
+    setError(`Upload failed: ${error.message}`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,16 +155,22 @@ export default function NewProductPage() {
             </label>
             <UploadButton<OurFileRouter, "productImage">
               endpoint="productImage"
+              onUploadBegin={handleUploadBegin}
               onClientUploadComplete={handleUploadComplete}
-              onUploadError={(error: Error) => {
-                setError(`Upload failed: ${error.message}`);
-              }}
+              onUploadError={handleUploadError}
               className="ut-button:bg-blue-600 ut-button:hover:bg-blue-700 ut-button:rounded-lg"
               appearance={{
                 button: "ut-uploading:cursor-not-allowed",
                 container: "w-full",
               }}
             />
+            
+            {uploading && (
+              <div className="flex items-center gap-2 mt-3 text-sm text-blue-600">
+                <Loader2 className="animate-spin" size={16} />
+                <span>Uploading images...</span>
+              </div>
+            )}
             
             {formData.images.length > 0 && (
               <div className="grid grid-cols-4 gap-2 mt-4">
