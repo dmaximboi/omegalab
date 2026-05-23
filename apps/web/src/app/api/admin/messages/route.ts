@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
 
+export const dynamic = "force-dynamic";
+
 // Singleton Prisma client
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient({
@@ -10,8 +12,6 @@ const prisma = globalForPrisma.prisma || new PrismaClient({
 });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
-
-export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
