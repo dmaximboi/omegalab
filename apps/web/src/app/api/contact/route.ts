@@ -3,7 +3,15 @@ import { PrismaClient } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-const prisma = new PrismaClient();
+// Lazy Prisma client - only instantiated when first accessed
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
+
+function getPrisma() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient();
+  }
+  return globalForPrisma.prisma;
+}
 
 // Rate limiting for contact form
 const submissions = new Map<string, number>();
@@ -70,7 +78,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Save to database
-    await prisma.contactMessage.create({
+    await getPrisma().contactMessage.create({
       data: {
         ...sanitizedData,
         ipAddress: ip,

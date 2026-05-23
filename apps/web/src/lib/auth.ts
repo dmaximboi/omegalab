@@ -3,22 +3,22 @@ import GoogleProvider from "next-auth/providers/google";
 import { PrismaClient } from "@prisma/client";
 import crypto from "crypto";
 
-// Singleton Prisma client to prevent connection exhaustion
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+// Lazy Prisma client - only instantiated when first accessed
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
-function createPrismaClient() {
-  return new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL,
+function getPrisma() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient({
+      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL,
+        },
       },
-    },
-  });
+    });
+  }
+  return globalForPrisma.prisma;
 }
-
-const prisma = globalForPrisma.prisma || createPrismaClient();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 /**
  * ============================================
@@ -148,7 +148,7 @@ export const authOptions: NextAuthOptions = {
 
       // Create or update user in database
       try {
-        const existingUser = await prisma.user.findUnique({
+        const existingUser = await pma.us.findUnique({
           where: { email },
           select: { id: true, failedLogins: true, lockedUntil: true },
         });
@@ -159,7 +159,7 @@ export const authOptions: NextAuthOptions = {
           return false;
         }
 
-        await prisma.user.upsert({
+        await pma.us.upsert({
           where: { email },
           update: {
             name: user.name || undefined,
@@ -177,7 +177,7 @@ export const authOptions: NextAuthOptions = {
         });
 
         // Log successful login
-        await prisma.securityEvent.create({
+        await getPrisma().securityEvent.create({
           data: {
             eventType: "LOGIN_SUCCESS",
             severity: "info",
@@ -207,7 +207,7 @@ export const authOptions: NextAuthOptions = {
         if (email) {
           try {
             // Fetch role from database - this is the source of truth
-            const dbUser = await prisma.user.findUnique({
+            const dbUser = await getPrisma().user.findUnique({
               where: { email },
               select: { role: true, id: true },
             });
@@ -226,7 +226,7 @@ export const authOptions: NextAuthOptions = {
               console.log(`[AUTH] Admin login: ${email}`);
               
               // Log admin access for audit
-              await prisma.securityEvent.create({
+              await getPrisma().securityEvent.create({
                 data: {
                   eventType: "ADMIN_ACCESS",
                   severity: "warning",

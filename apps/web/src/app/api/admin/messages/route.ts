@@ -5,13 +5,17 @@ import { PrismaClient } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-// Singleton Prisma client
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient({
-  log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-});
+// Lazy Prisma client - only instantiated when first accessed
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+function getPrisma() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient({
+      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    });
+  }
+  return globalForPrisma.prisma;
+}
 
 export async function GET() {
   try {
@@ -21,7 +25,7 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const messages = await prisma.contactMessage.findMany({
+    const messages = await getPrisma().contactMessage.findMany({
       orderBy: { createdAt: "desc" },
     });
 

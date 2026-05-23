@@ -5,13 +5,17 @@ import { generateTxRef, generateReceiptHash } from "@/lib/flutterwave";
 
 export const dynamic = "force-dynamic";
 
-// Singleton Prisma client
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient({
-  log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-});
+// Lazy Prisma client - only instantiated when first accessed
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+function getPrisma() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient({
+      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    });
+  }
+  return globalForPrisma.prisma;
+}
 
 /**
  * Transaction State Machine — 5 steps:
@@ -62,7 +66,7 @@ export async function POST(request: Request) {
     const productIds: string[] = items.map((item: any) => String(item.id));
     const uniqueIds = Array.from(new Set(productIds));
 
-    const products = await prisma.product.findMany({
+    const products = await getPrisma().product.findMany({
       where: {
         id: { in: uniqueIds },
         isActive: true,
@@ -111,7 +115,7 @@ export async function POST(request: Request) {
     const txRef = generateTxRef();
 
     // Idempotency: check if same user+items already has a PENDING order in last 5 min
-    const recentOrder = await prisma.order.findFirst({
+    const recentOrder = await getPrisma().order.findFirst({
       where: {
         status: "INITIATED",
         ipAddress,
@@ -130,7 +134,7 @@ export async function POST(request: Request) {
     }
 
     // Create or find user
-    const guestUser = await prisma.user.upsert({
+    const guestUser = await getPrisma().user.upsert({
       where: { email },
       create: {
         email,
@@ -145,7 +149,7 @@ export async function POST(request: Request) {
     // Note: txRef is unique per order and used as the orderId component since order hasn't been created yet
 
     // STEP 1: INITIATED — Create order in database
-    const order = await prisma.order.create({
+    const order = await getPrisma().order.create({
       data: {
         userId: guestUser.id,
         totalAmount: totalAsNumber,
@@ -190,7 +194,7 @@ async function logTransactionStep(
   metadata: Record<string, any>
 ) {
   try {
-    await prisma.paymentLog.create({
+    await getPrisma().paymentLog.create({
       data: {
         orderId,
         txRef,

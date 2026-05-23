@@ -3,7 +3,15 @@ import { PrismaClient } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-const prisma = new PrismaClient();
+// Lazy Prisma client - only instantiated when first accessed
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
+
+function getPrisma() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient();
+  }
+  return globalForPrisma.prisma;
+}
 
 /**
  * HEALTH CHECK ENDPOINT
@@ -24,7 +32,7 @@ export async function GET() {
   
   try {
     // Simple database ping to keep connection alive
-    await prisma.$queryRaw`SELECT 1`;
+    await getPrisma().$queryRaw`SELECT 1`;
     
     const responseTime = Date.now() - startTime;
     

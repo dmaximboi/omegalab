@@ -4,15 +4,19 @@ import { authOptions } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
 import crypto from "crypto";
 
-// Singleton Prisma client
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient({
-  log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-});
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
-
 export const dynamic = "force-dynamic";
+
+// Lazy Prisma client - only instantiated when first accessed
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
+
+function getPrisma() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient({
+      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    });
+  }
+  return globalForPrisma.prisma;
+}
 
 export async function GET() {
   try {
@@ -22,7 +26,7 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const products = await prisma.product.findMany({
+    const products = await getPrisma().product.findMany({
       include: {
         images: {
           select: { url: true, order: true },
@@ -66,7 +70,7 @@ export async function POST(request: Request) {
       .replace(/(^-|-$)/g, "")
       + "-" + crypto.randomBytes(4).toString("hex");
 
-    const product = await prisma.product.create({
+    const product = await getPrisma().product.create({
       data: {
         slug,
         name,

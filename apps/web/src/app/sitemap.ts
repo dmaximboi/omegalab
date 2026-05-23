@@ -3,11 +3,17 @@ import { PrismaClient } from "@prisma/client";
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://omegalabaffairs.com";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
-
 export const dynamic = "force-dynamic";
+
+// Lazy Prisma client - only instantiated when first accessed
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
+
+function getPrisma() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient();
+  }
+  return globalForPrisma.prisma;
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages
@@ -53,7 +59,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Dynamic product pages from database
   let productPages: MetadataRoute.Sitemap = [];
   try {
-    const products = await prisma.product.findMany({
+    const products = await getPrisma().product.findMany({
       where: { isActive: true },
       select: { slug: true, updatedAt: true },
     });

@@ -3,11 +3,17 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
-
 export const dynamic = "force-dynamic";
+
+// Lazy Prisma client - only instantiated when first accessed
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
+
+function getPrisma() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient();
+  }
+  return globalForPrisma.prisma;
+}
 
 export async function GET(request: Request) {
   try {
@@ -24,7 +30,7 @@ export async function GET(request: Request) {
     const where = status ? { status } : {};
 
     const [orders, total] = await Promise.all([
-      prisma.order.findMany({
+      getPrisma().order.findMany({
         where,
         include: {
           items: {
@@ -36,12 +42,12 @@ export async function GET(request: Request) {
         skip: (page - 1) * limit,
         take: limit,
       }),
-      prisma.order.count({ where }),
+      getPrisma().order.count({ where }),
     ]);
 
     // Get transaction logs for each order
     const orderIds = orders.map((o: typeof orders[number]) => o.id);
-    const logs = await prisma.paymentLog.findMany({
+    const logs = await getPrisma().paymentLog.findMany({
       where: { orderId: { in: orderIds } },
       orderBy: { createdAt: "asc" },
     });

@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import crypto from "crypto";
 
-const prisma = new PrismaClient();
-
 export const dynamic = "force-dynamic";
+
+// Lazy Prisma client - only instantiated when first accessed
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
+
+function getPrisma() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient();
+  }
+  return globalForPrisma.prisma;
+}
 
 /**
  * CRON JOB: Keep Database Alive
@@ -57,7 +65,7 @@ export async function GET(request: NextRequest) {
     const startTime = Date.now();
     
     // Simple query to keep connection alive (read-only)
-    await prisma.$queryRaw`SELECT 1 as ping`;
+    await getPrisma().$queryRaw`SELECT 1 as ping`;
     
     // Optional: Clean up old data (only if tables exist)
     const cleanupResults = {
@@ -67,7 +75,7 @@ export async function GET(request: NextRequest) {
 
     try {
       // Clean up old security events (older than 30 days)
-      const securityCleanup = await prisma.securityEvent.deleteMany({
+      const securityCleanup = await getPrisma().securityEvent.deleteMany({
         where: {
           createdAt: {
             lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),

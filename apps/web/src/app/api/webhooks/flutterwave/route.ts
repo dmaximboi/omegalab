@@ -5,13 +5,17 @@ import { verifyFlutterwavePayment, verifyWebhookSignature } from "@/lib/flutterw
 
 export const dynamic = "force-dynamic";
 
-// Singleton Prisma client
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient({
-  log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-});
+// Lazy Prisma client - only instantiated when first accessed
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+function getPrisma() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient({
+      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    });
+  }
+  return globalForPrisma.prisma;
+}
 
 const EXPECTED_CURRENCY = "NGN";
 
@@ -42,7 +46,7 @@ export async function POST(request: Request) {
     }
 
     // Find order by txRef from our DB
-    const order = await prisma.order.findUnique({
+    const order = await getPrisma().order.findUnique({
       where: { txRef },
     });
 
@@ -69,7 +73,7 @@ export async function POST(request: Request) {
     const currencyOk = flwData?.currency === EXPECTED_CURRENCY;
 
     if (isSuccess && txRefMatch && amountOk && currencyOk) {
-      await prisma.order.update({
+      await getPrisma().order.update({
         where: { id: order.id },
         data: {
           status: "PAID",
@@ -104,7 +108,7 @@ async function logWebhookPayment(
   data: any
 ) {
   try {
-    await prisma.paymentLog.create({
+    await getPrisma().paymentLog.create({
       data: {
         orderId,
         txRef,

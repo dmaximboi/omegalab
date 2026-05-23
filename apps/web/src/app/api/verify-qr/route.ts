@@ -4,9 +4,15 @@ import { verifyReceiptHash } from "@/lib/flutterwave";
 
 export const dynamic = "force-dynamic";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// Lazy Prisma client - only instantiated when first accessed
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
+
+function getPrisma() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient();
+  }
+  return globalForPrisma.prisma;
+}
 
 export async function GET(request: NextRequest) {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -29,7 +35,7 @@ export async function GET(request: NextRequest) {
     // In production, use Redis or DB-based rate limiting
 
     // Find order by receipt hash (QR code contains this)
-    const order = await prisma.order.findFirst({
+    const order = await getPrisma().order.findFirst({
       where: {
         receiptHash: code,
         paymentVerified: true, // Only show verified (paid) orders
@@ -90,7 +96,7 @@ export async function GET(request: NextRequest) {
 
 async function logVerifyAttempt(ip: string, codePrefix: string, success: boolean, reason: string) {
   try {
-    await prisma.securityEvent.create({
+    await getPrisma().securityEvent.create({
       data: {
         eventType: "qr_verification",
         severity: success ? "info" : "warning",

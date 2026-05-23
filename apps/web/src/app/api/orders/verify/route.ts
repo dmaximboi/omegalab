@@ -5,13 +5,17 @@ import { verifyFlutterwavePayment } from "@/lib/flutterwave";
 
 export const dynamic = "force-dynamic";
 
-// Singleton Prisma client
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient({
-  log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-});
+// Lazy Prisma client - only instantiated when first accessed
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+function getPrisma() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient({
+      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    });
+  }
+  return globalForPrisma.prisma;
+}
 
 const EXPECTED_CURRENCY = "NGN";
 
@@ -30,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     // Find the order — use the DB's own txRef, not the one from frontend
-    const order = await prisma.order.findUnique({
+    const order = await getPrisma().order.findUnique({
       where: { id: orderId },
     });
 
@@ -52,11 +56,11 @@ export async function POST(request: Request) {
     }
 
     // STEP 2: PROCESSING — Mark order as being processed
-    await prisma.order.update({ where: { id: orderId }, data: { status: "PROCESSING" } });
+    await getPrisma().order.update({ where: { id: orderId }, data: { status: "PROCESSING" } });
     await logPayment({ orderId, txRef: order.txRef, status: "step:PROCESSING", ipAddress });
 
     // STEP 3: VERIFYING — Server-to-server verification with Flutterwave
-    await prisma.order.update({ where: { id: orderId }, data: { status: "VERIFYING" } });
+    await getPrisma().order.update({ where: { id: orderId }, data: { status: "VERIFYING" } });
     await logPayment({ orderId, txRef: order.txRef, status: "step:VERIFYING", ipAddress });
 
     const flwResponse = await verifyFlutterwavePayment(String(transaction_id));
@@ -76,7 +80,7 @@ export async function POST(request: Request) {
 
     if (isSuccess && txRefMatch && amountOk && currencyOk) {
       // Update order as paid
-      await prisma.order.update({
+      await getPrisma().order.update({
         where: { id: orderId },
         data: {
           status: "PAID",
@@ -116,7 +120,7 @@ export async function POST(request: Request) {
       // STEP 5: FAILED
       const failReason = !isSuccess ? "flw_not_success" : !txRefMatch ? "txref_mismatch" : !amountOk ? "amount_mismatch" : "currency_mismatch";
 
-      await prisma.order.update({ where: { id: orderId }, data: { status: "FAILED" } });
+      await getPrisma().order.update({ where: { id: orderId }, data: { status: "FAILED" } });
 
       await logPayment({
         orderId,
@@ -148,7 +152,7 @@ async function logPayment(data: {
   ipAddress?: string;
 }) {
   try {
-    await prisma.paymentLog.create({
+    await getPrisma().paymentLog.create({
       data: {
         orderId: data.orderId || null,
         txRef: data.txRef || null,
