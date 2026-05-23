@@ -19,9 +19,20 @@ import {
   Package,
   User,
   Filter,
+  Search,
+  Download,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+
+const STATUS_BADGES: Record<string, string> = {
+  INITIATED: "bg-blue-100 text-blue-700",
+  PROCESSING: "bg-amber-100 text-amber-700",
+  VERIFYING: "bg-purple-100 text-purple-700",
+  PAID: "bg-green-100 text-green-700",
+  FAILED: "bg-red-100 text-red-700",
+  PENDING: "bg-gray-100 text-gray-700",
+};
 
 interface TransactionStep {
   step: string;
@@ -160,14 +171,6 @@ function getStepInfo(step: string) {
   };
 }
 
-const STATUS_BADGES: Record<string, string> = {
-  INITIATED: "bg-blue-100 text-blue-700",
-  PROCESSING: "bg-amber-100 text-amber-700",
-  VERIFYING: "bg-purple-100 text-purple-700",
-  PAID: "bg-green-100 text-green-700",
-  FAILED: "bg-red-100 text-red-700",
-};
-
 export default function AdminOrdersPage() {
   const { data: session } = useSession();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -177,6 +180,7 @@ export default function AdminOrdersPage() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const fetchRef = useRef(false);
 
   const fetchOrders = async (page = 1, status = "") => {
@@ -218,6 +222,40 @@ export default function AdminOrdersPage() {
     fetchOrders(page, statusFilter);
   };
 
+  const exportOrders = () => {
+    const filteredOrders = orders.filter(order => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        order.id.toLowerCase().includes(query) ||
+        order.customer.email?.toLowerCase().includes(query) ||
+        order.txRef?.toLowerCase().includes(query)
+      );
+    });
+
+    const csv = [
+      ["Order ID", "Status", "Amount", "Customer", "Email", "Date", "TX Ref", "FLW Ref"],
+      ...filteredOrders.map(order => [
+        order.id.slice(-8).toUpperCase(),
+        order.status,
+        order.totalAmount,
+        order.customer.name || "Guest",
+        order.customer.email,
+        new Date(order.createdAt).toLocaleString(),
+        order.txRef,
+        order.flwRef || ""
+      ])
+    ].map(row => row.join(",")).join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `orders-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString("en-NG", {
       year: "numeric",
@@ -255,18 +293,37 @@ export default function AdminOrdersPage() {
             Full lifecycle logging of every order — 5-step state machine
           </p>
         </div>
-        <button
-          onClick={() => fetchOrders(pagination?.page || 1, statusFilter)}
-          disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
-        >
-          <RefreshCcw size={16} className={refreshing ? "animate-spin" : ""} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => fetchOrders(pagination?.page || 1, statusFilter)}
+            disabled={refreshing}
+            className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+          >
+            <RefreshCcw size={16} className={refreshing ? "animate-spin" : ""} />
+            Refresh
+          </button>
+          <button
+            onClick={() => exportOrders()}
+            className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition"
+          >
+            <Download size={16} />
+            Export
+          </button>
+        </div>
       </div>
 
-      {/* Status Filters */}
-      <div className="flex flex-wrap gap-2">
+      {/* Search and Filters */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/40" size={16} />
+          <input
+            type="text"
+            placeholder="Search by order ID, email, or txRef..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-sky/20 focus:border-sky/30"
+          />
+        </div>
         {["", "INITIATED", "PROCESSING", "VERIFYING", "PAID", "FAILED"].map((s) => (
           <button
             key={s}
@@ -295,7 +352,17 @@ export default function AdminOrdersPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {orders.map((order) => {
+          {orders
+            .filter(order => {
+              if (!searchQuery) return true;
+              const query = searchQuery.toLowerCase();
+              return (
+                order.id.toLowerCase().includes(query) ||
+                order.customer.email?.toLowerCase().includes(query) ||
+                order.txRef?.toLowerCase().includes(query)
+              );
+            })
+            .map((order) => {
             const isExpanded = expandedOrder === order.id;
             return (
               <div key={order.id} className="bg-white rounded-xl border overflow-hidden">
