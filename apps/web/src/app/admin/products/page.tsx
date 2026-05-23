@@ -8,6 +8,8 @@ import {
   Package, Eye, EyeOff, Loader2 
 } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 interface Product {
   id: string;
   name: string;

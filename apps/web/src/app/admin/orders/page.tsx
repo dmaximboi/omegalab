@@ -21,6 +21,8 @@ import {
   Filter,
 } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 interface TransactionStep {
   step: string;
   timestamp: string;

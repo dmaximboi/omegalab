@@ -5,11 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingCart, 
-  MessageSquare, 
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  MessageSquare,
   QrCode,
   Users,
   TrendingUp,
@@ -17,6 +17,8 @@ import {
   ChevronRight,
   Home
 } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 // Admin tabs configuration
 const ADMIN_TABS = [
