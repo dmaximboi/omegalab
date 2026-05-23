@@ -3,9 +3,17 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
-
 export const dynamic = "force-dynamic";
+
+// Lazy Prisma client - only instantiated when first accessed
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
+
+function getPrisma() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient();
+  }
+  return globalForPrisma.prisma;
+}
 
 export async function GET(
   request: NextRequest,
@@ -18,7 +26,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const order = await prisma.order.findUnique({
+    const order = await getPrisma().order.findUnique({
       where: { id: params.id },
       include: {
         items: {
