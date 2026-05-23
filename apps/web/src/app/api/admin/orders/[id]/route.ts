@@ -167,7 +167,7 @@ function getSecurityFlags(timeline: Array<{ step: string; ipAddress: string | nu
   const hasFailure = timeline.some((t) => t.step.includes("FAILED"));
   const hasMismatch = timeline.some((t) => t.step.includes("mismatch"));
   const multipleIps =
-    new Set(timeline.filter((t) => t.ipAddress).map((t) => t.ipAddress)).size > 1;
+    new Set(timeline.filter((t) => t.ipAddress).map((t: typeof timeline[number]) => t.ipAddress)).size > 1;
 
   if (hasMismatch) flags.push("SECURITY_ALERT: Mismatch detected — possible tampering");
   if (multipleIps) flags.push("NOTICE: Multiple IP addresses detected in transaction lifecycle");

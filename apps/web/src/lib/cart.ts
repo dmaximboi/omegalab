@@ -42,7 +42,7 @@ export const cart = {
       return parsed
         .filter(isValidCartItem)
         .slice(0, MAX_CART_ITEMS)
-        .map((item) => ({
+        .map((item: CartItem) => ({
           id: sanitizeString(item.id),
           name: sanitizeString(item.name),
           price: Math.abs(Number(item.price)),
