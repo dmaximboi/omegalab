@@ -168,10 +168,8 @@ export async function POST(request: Request) {
         status: "INITIATED",
         ipAddress,
         userAgent,
-        ...(process.env.NODE_ENV === 'development' ? {} : {
-          paymentToken,
-          tokenExpiresAt,
-        }),
+        paymentToken,
+        tokenExpiresAt,
         items: {
           create: orderItems,
         },

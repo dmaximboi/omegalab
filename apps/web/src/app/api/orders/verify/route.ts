@@ -48,14 +48,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Check if token is provided and valid (if schema has been updated)
-    if (paymentToken && (order as any).paymentToken && (order as any).paymentToken !== paymentToken) {
+    // Check if token is provided and valid
+    if (paymentToken && order.paymentToken && order.paymentToken !== paymentToken) {
       await logPayment({ orderId, txRef: order.txRef, flwRef: String(transaction_id), status: "step:FAILED:invalid_token", ipAddress });
       return NextResponse.json({ error: "Invalid payment token" }, { status: 403 });
     }
 
-    // Check if token has expired (if schema has been updated)
-    if ((order as any).tokenExpiresAt && new Date() > (order as any).tokenExpiresAt) {
+    // Check if token has expired
+    if (order.tokenExpiresAt && new Date() > order.tokenExpiresAt) {
       await logPayment({ orderId, txRef: order.txRef, flwRef: String(transaction_id), status: "step:FAILED:token_expired", ipAddress });
       return NextResponse.json({ error: "Payment token has expired" }, { status: 400 });
     }
