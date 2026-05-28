@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, OrderStatus } from "@prisma/client";
 import Decimal from "decimal.js";
 import { verifyFlutterwavePayment } from "@/lib/flutterwave";
 import crypto from "crypto";
@@ -95,11 +95,11 @@ export async function POST(request: Request) {
     }
 
     // STEP 2: PROCESSING — Mark order as being processed
-    await getPrisma().order.update({ where: { id: orderId }, data: { status: "PROCESSING" } });
+    await getPrisma().order.update({ where: { id: orderId }, data: { status: OrderStatus.PROCESSING } });
     await logPayment({ orderId, txRef: order.txRef, status: "step:PROCESSING", ipAddress });
 
     // STEP 3: VERIFYING — Server-to-server verification with Flutterwave
-    await getPrisma().order.update({ where: { id: orderId }, data: { status: "VERIFYING" } });
+    await getPrisma().order.update({ where: { id: orderId }, data: { status: OrderStatus.VERIFYING } });
     await logPayment({ orderId, txRef: order.txRef, status: "step:VERIFYING", ipAddress });
 
     const flwResponse = await verifyFlutterwavePayment(String(transaction_id));
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
       await getPrisma().order.update({
         where: { id: orderId },
         data: {
-          status: "PAID",
+          status: OrderStatus.PAID,
           paymentVerified: true,
           flwRef: String(transaction_id),
           verifiedAt: new Date(),
@@ -159,7 +159,7 @@ export async function POST(request: Request) {
       // STEP 5: FAILED
       const failReason = !isSuccess ? "flw_not_success" : !txRefMatch ? "txref_mismatch" : !amountOk ? "amount_mismatch" : "currency_mismatch";
 
-      await getPrisma().order.update({ where: { id: orderId }, data: { status: "FAILED" } });
+      await getPrisma().order.update({ where: { id: orderId }, data: { status: OrderStatus.FAILED } });
 
       await logPayment({
         orderId,

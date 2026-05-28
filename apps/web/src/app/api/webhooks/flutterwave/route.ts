@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, OrderStatus } from "@prisma/client";
 import Decimal from "decimal.js";
 import { verifyFlutterwavePayment, verifyWebhookSignature } from "@/lib/flutterwave";
 
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
       await getPrisma().order.update({
         where: { id: order.id },
         data: {
-          status: "PAID",
+          status: OrderStatus.PAID,
           paymentVerified: true,
           flwRef: String(transactionId),
           verifiedAt: new Date(),

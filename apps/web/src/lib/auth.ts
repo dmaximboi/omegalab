@@ -1,6 +1,6 @@
 import { NextAuthOptions, getServerSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import crypto from "crypto";
 
 // Lazy Prisma client - only instantiated when first accessed
@@ -178,7 +178,7 @@ export const authOptions: NextAuthOptions = {
             email,
             name: user.name || "",
             image: user.image || "",
-            role: "USER", // Always USER by default - admin set via DB only
+            role: Role.USER, // Always USER by default - admin set via DB only
           },
         });
 

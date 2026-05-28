@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, OrderStatus } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -36,14 +36,14 @@ export async function GET() {
 
     // Total revenue (all time)
     const totalRevenue = await getPrisma().order.aggregate({
-      where: { status: "PAID" },
+      where: { status: OrderStatus.PAID },
       _sum: { totalAmount: true },
     });
 
     // Revenue in last 30 days
     const revenue30Days = await getPrisma().order.aggregate({
       where: {
-        status: "PAID",
+        status: OrderStatus.PAID,
         createdAt: { gte: thirtyDaysAgo },
       },
       _sum: { totalAmount: true },
@@ -52,7 +52,7 @@ export async function GET() {
     // Revenue in last 7 days
     const revenue7Days = await getPrisma().order.aggregate({
       where: {
-        status: "PAID",
+        status: OrderStatus.PAID,
         createdAt: { gte: sevenDaysAgo },
       },
       _sum: { totalAmount: true },
@@ -60,16 +60,16 @@ export async function GET() {
 
     // Total orders
     const totalOrders = await getPrisma().order.count();
-    const paidOrders = await getPrisma().order.count({ where: { status: "PAID" } });
+    const paidOrders = await getPrisma().order.count({ where: { status: OrderStatus.PAID } });
     const pendingOrders = await getPrisma().order.count({
-      where: { status: { in: ["INITIATED", "PROCESSING", "VERIFYING"] } },
+      where: { status: { in: [OrderStatus.INITIATED, OrderStatus.PROCESSING, OrderStatus.VERIFYING] } },
     });
-    const failedOrders = await getPrisma().order.count({ where: { status: "FAILED" } });
+    const failedOrders = await getPrisma().order.count({ where: { status: OrderStatus.FAILED } });
 
     // Daily revenue for last 30 days - use Prisma instead of raw SQL for compatibility
     const dailyRevenue = await getPrisma().order.findMany({
       where: {
-        status: "PAID",
+        status: OrderStatus.PAID,
         createdAt: { gte: thirtyDaysAgo },
       },
       select: {

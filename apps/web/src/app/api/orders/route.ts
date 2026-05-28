@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, OrderStatus, Role } from "@prisma/client";
 import Decimal from "decimal.js";
 import { generateTxRef, generateReceiptHash } from "@/lib/flutterwave";
 import crypto from "crypto";
@@ -125,7 +125,7 @@ export async function POST(request: Request) {
     // Idempotency: check if same user+items already has a PENDING order in last 5 min
     const recentOrder = await getPrisma().order.findFirst({
       where: {
-        status: "INITIATED",
+        status: OrderStatus.INITIATED,
         ipAddress,
         createdAt: { gte: new Date(Date.now() - 5 * 60 * 1000) },
         totalAmount: totalAsNumber,
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
       create: {
         email,
         name: String(name).slice(0, 100),
-        role: "USER",
+        role: Role.USER,
       },
       update: {},
     });
@@ -165,7 +165,7 @@ export async function POST(request: Request) {
         receiptHash,
         receiptSalt,
         txRef,
-        status: "INITIATED",
+        status: OrderStatus.INITIATED,
         ipAddress,
         userAgent,
         paymentToken,

@@ -34,7 +34,10 @@ export async function GET(request: Request) {
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20")));
     const status = searchParams.get("status") || undefined;
 
-    const where = status ? { status } : {};
+    const validStatuses = ["INITIATED", "PROCESSING", "VERIFYING", "PAID", "FAILED", "CANCELLED"] as const;
+    const where = status && validStatuses.includes(status as any)
+      ? { status: status as (typeof validStatuses)[number] }
+      : {};
 
     const [orders, total] = await Promise.all([
       getPrisma().order.findMany({
