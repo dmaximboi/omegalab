@@ -121,8 +121,8 @@ export default function PaymentProcessingPage() {
       },
       onclose: () => {
         if (paymentStatus !== "success") {
-          // User closed without completing - stay on page
-          setPaymentStatus("pending");
+          // User closed without completing - redirect back to cart
+          router.push("/order");
         }
       },
     });
