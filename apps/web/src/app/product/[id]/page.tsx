@@ -136,7 +136,7 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Loader2 className="animate-spin text-blue-600" size={32} />
       </div>
     );
@@ -144,10 +144,10 @@ export default function ProductDetailPage() {
 
   if (error || !product) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <Package className="mx-auto text-gray-300 mb-4" size={48} />
-          <p className="text-gray-500 mb-4">{error || "Product not found"}</p>
+          <Package className="mx-auto text-gray-300 dark:text-gray-600 mb-4" size={48} />
+          <p className="text-gray-500 dark:text-gray-400 mb-4">{error || "Product not found"}</p>
           <Link
             href="/catalogue"
             className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
@@ -163,18 +163,18 @@ export default function ProductDetailPage() {
   const currentImage = product.images && product.images.length > 0 ? product.images[currentImageIndex] : null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
+      <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
             >
               <ArrowLeft size={20} />
             </button>
-            <h1 className="text-xl font-bold text-gray-900">Product Details</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Product Details</h1>
           </div>
         </div>
       </header>
@@ -183,7 +183,7 @@ export default function ProductDetailPage() {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="relative aspect-square bg-white rounded-lg border overflow-hidden"
+            <div className="relative aspect-square bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 overflow-hidden"
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
@@ -256,18 +256,18 @@ export default function ProductDetailPage() {
           {/* Product Details */}
           <div className="space-y-6">
             <div>
-              <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full mb-3">
+              <span className="inline-block px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm font-medium rounded-full mb-3">
                 {product.category}
               </span>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{product.name}</h1>
               <p className="text-3xl font-bold text-blue-600">
                 ₦{product.price.toLocaleString()}
               </p>
             </div>
 
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Description</h2>
-              <p className="text-gray-600 leading-relaxed">{product.description}</p>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Description</h2>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{product.description}</p>
             </div>
 
             <div className="flex gap-3">
@@ -296,21 +296,21 @@ export default function ProductDetailPage() {
               </button>
               <button
                 onClick={shareProduct}
-                className="p-3 border rounded-lg hover:bg-gray-50 transition"
+                className="p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition"
               >
                 <Share2 size={20} />
               </button>
             </div>
 
-            <div className="border-t pt-6">
-              <h3 className="font-semibold text-gray-900 mb-3">Product Information</h3>
+            <div className="border-t dark:border-gray-700 pt-6">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Product Information</h3>
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-gray-500">Category</dt>
-                  <dd className="text-gray-900">{product.category}</dd>
+                  <dt className="text-gray-500 dark:text-gray-400">Category</dt>
+                  <dd className="text-gray-900 dark:text-white">{product.category}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-gray-500">Availability</dt>
+                  <dt className="text-gray-500 dark:text-gray-400">Availability</dt>
                   <dd className={product.isActive ? "text-green-600" : "text-red-600"}>
                     {product.isActive ? "In Stock" : "Out of Stock"}
                   </dd>

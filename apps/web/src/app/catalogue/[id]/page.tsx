@@ -63,7 +63,7 @@ export default function ProductDetailPage() {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen bg-light-grey flex items-center justify-center">
+        <main className="min-h-screen bg-light-grey dark:bg-gray-900 flex items-center justify-center">
           <Loader2 className="w-8 h-8 text-sky animate-spin" />
         </main>
       </>
@@ -74,8 +74,8 @@ export default function ProductDetailPage() {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen bg-light-grey flex items-center justify-center">
-          <p>Product not found</p>
+        <main className="min-h-screen bg-light-grey dark:bg-gray-900 flex items-center justify-center">
+          <p className="dark:text-gray-400">Product not found</p>
         </main>
       </>
     );
@@ -84,11 +84,11 @@ export default function ProductDetailPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-light-grey">
+      <main className="min-h-screen bg-light-grey dark:bg-gray-900">
         <div className="container py-8">
           <Link
             href="/catalogue"
-            className="inline-flex items-center gap-2 text-navy/60 hover:text-navy mb-6"
+            className="inline-flex items-center gap-2 text-navy/60 dark:text-gray-400 hover:text-navy dark:hover:text-white mb-6"
           >
             <ArrowLeft size={18} />
             Back to Catalogue
@@ -97,7 +97,7 @@ export default function ProductDetailPage() {
           <div className="grid md:grid-cols-2 gap-8">
             {/* Images */}
             <div className="space-y-4">
-              <div className="aspect-square bg-white rounded-xl overflow-hidden border">
+              <div className="aspect-square bg-white dark:bg-gray-800 rounded-xl overflow-hidden border dark:border-gray-700">
                 {product.images[0] ? (
                   <Image
                     src={product.images[0].url}
@@ -108,15 +108,15 @@ export default function ProductDetailPage() {
                     quality={75}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                    <p className="text-gray-400">No image</p>
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+                    <p className="text-gray-400 dark:text-gray-500">No image</p>
                   </div>
                 )}
               </div>
               {product.images.length > 1 && (
                 <div className="grid grid-cols-4 gap-2">
                   {product.images.slice(1).map((image) => (
-                    <div key={image.id} className="aspect-square bg-white rounded-lg overflow-hidden border">
+                    <div key={image.id} className="aspect-square bg-white dark:bg-gray-800 rounded-lg overflow-hidden border dark:border-gray-700">
                       <Image
                         src={image.url}
                         alt={product.name}
@@ -134,16 +134,16 @@ export default function ProductDetailPage() {
             {/* Details */}
             <div className="space-y-6">
               <div>
-                <h1 className="text-3xl font-bold text-navy mb-2">{product.name}</h1>
-                <p className="text-sm text-navy/60">{product.category}</p>
+                <h1 className="text-3xl font-bold text-navy dark:text-white mb-2">{product.name}</h1>
+                <p className="text-sm text-navy/60 dark:text-gray-400">{product.category}</p>
               </div>
 
               <div className="text-3xl font-bold text-sky">
                 ₦{parseFloat(product.price.toString()).toLocaleString()}
               </div>
 
-              <div className="prose prose-sm max-w-none">
-                <p className="text-navy/80 whitespace-pre-line">{product.description}</p>
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <p className="text-navy/80 dark:text-gray-300 whitespace-pre-line">{product.description}</p>
               </div>
 
               <div className="flex gap-4">
@@ -161,9 +161,9 @@ export default function ProductDetailPage() {
                 </button>
               </div>
 
-              <div className="border-t pt-6">
-                <h3 className="font-semibold mb-3">Specifications</h3>
-                <div className="space-y-2 text-sm text-navy/70">
+              <div className="border-t dark:border-gray-700 pt-6">
+                <h3 className="font-semibold dark:text-white mb-3">Specifications</h3>
+                <div className="space-y-2 text-sm text-navy/70 dark:text-gray-400">
                   <div className="flex justify-between">
                     <span>Category:</span>
                     <span className="font-medium">{product.category}</span>

@@ -200,7 +200,7 @@ export default function OrderDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Loader2 className="animate-spin text-blue-600" size={32} />
       </div>
     );
@@ -208,10 +208,10 @@ export default function OrderDetailPage() {
 
   if (error || !order) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <Package className="mx-auto text-gray-300 mb-4" size={48} />
-          <p className="text-gray-500 mb-4">{error || "Order not found"}</p>
+          <Package className="mx-auto text-gray-300 dark:text-gray-600 mb-4" size={48} />
+          <p className="text-gray-500 dark:text-gray-400 mb-4">{error || "Order not found"}</p>
           <Link
             href="/orders"
             className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
@@ -225,20 +225,20 @@ export default function OrderDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
+      <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
             >
               <ArrowLeft size={20} />
             </button>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Order Details</h1>
-              <p className="text-sm text-gray-500">Order #{order.id.slice(0, 8)}</p>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Order Details</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Order #{order.id.slice(0, 8)}</p>
             </div>
           </div>
         </div>
@@ -246,15 +246,15 @@ export default function OrderDetailPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Status Card */}
-        <div className="bg-white rounded-lg border p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-6 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {getStatusIcon(order.status)}
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {getStatusText(order.status)}
                 </h2>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {formatDate(order.createdAt)}
                 </p>
               </div>
@@ -282,21 +282,21 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t">
+          <div className="mt-4 pt-4 border-t dark:border-gray-700">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Transaction Reference:</span>
+              <span className="text-gray-500 dark:text-gray-400">Transaction Reference:</span>
               <div className="flex items-center gap-2">
-                <code className="bg-gray-100 px-2 py-1 rounded">{order.txRef}</code>
+                <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{order.txRef}</code>
                 <button
                   onClick={copyTxRef}
-                  className="p-1 hover:bg-gray-100 rounded"
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                 >
                   <Copy size={16} />
                 </button>
               </div>
             </div>
             <div className="flex items-center justify-between text-sm mt-2">
-              <span className="text-gray-500">Check Status:</span>
+              <span className="text-gray-500 dark:text-gray-400">Check Status:</span>
               <button
                 onClick={checkStatus}
                 className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
@@ -309,9 +309,9 @@ export default function OrderDetailPage() {
         </div>
 
         {/* Order Items */}
-        <div className="bg-white rounded-lg border overflow-hidden">
-          <div className="p-4 border-b bg-gray-50">
-            <h3 className="font-semibold text-gray-900">Order Items</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+            <h3 className="font-semibold text-gray-900 dark:text-white">Order Items</h3>
           </div>
           <div className="divide-y">
             {order.items.map((item) => (
@@ -331,22 +331,22 @@ export default function OrderDetailPage() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-gray-900 dark:text-white">
                     {item.product.name}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     Quantity: {item.quantity}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-semibold text-gray-900 dark:text-white">
                     ₦{item.unitPrice.toLocaleString()}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     each
                   </p>
                 </div>
-                <p className="font-bold text-gray-900 w-24 text-right">
+                <p className="font-bold text-gray-900 dark:text-white w-24 text-right">
                   ₦{(item.unitPrice * item.quantity).toLocaleString()}
                 </p>
               </div>
@@ -354,9 +354,9 @@ export default function OrderDetailPage() {
           </div>
 
           {/* Total */}
-          <div className="p-4 border-t bg-gray-50">
+          <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-gray-900">Total</span>
+              <span className="font-semibold text-gray-900 dark:text-white">Total</span>
               <span className="text-2xl font-bold text-blue-600">
                 ₦{order.totalAmount.toLocaleString()}
               </span>
@@ -375,7 +375,7 @@ export default function OrderDetailPage() {
           {order.status === "PAID" && (
             <button 
               onClick={fetchReceipt}
-              className="flex items-center justify-center gap-2 px-6 py-3 border rounded-lg hover:bg-gray-50 transition"
+              className="flex items-center justify-center gap-2 px-6 py-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition"
             >
               <Download size={20} />
               Download Receipt
@@ -387,7 +387,7 @@ export default function OrderDetailPage() {
       {/* Receipt Modal */}
       {showReceipt && receipt && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold">Order Receipt</h3>

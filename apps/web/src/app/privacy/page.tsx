@@ -5,12 +5,12 @@ export default function PrivacyPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-light-grey">
+      <main className="min-h-screen bg-light-grey dark:bg-gray-900">
         <div className="container py-12">
           <h1 className="page-title mb-8">Privacy Policy</h1>
           
-          <div className="bg-white rounded-xl border p-8 prose prose-lg max-w-4xl">
-            <p className="text-sm text-navy/60 mb-6">Last updated: {new Date().toLocaleDateString()}</p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-8 prose prose-lg dark:prose-invert max-w-4xl">
+            <p className="text-sm text-navy/60 dark:text-gray-400 mb-6">Last updated: {new Date().toLocaleDateString()}</p>
             
             <h2>1. Information We Collect</h2>
             <p>

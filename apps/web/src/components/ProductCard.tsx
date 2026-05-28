@@ -48,7 +48,7 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <div className="card card-hover group">
       {/* Image */}
-      <div className="relative aspect-[4/3] bg-light-grey rounded-lg overflow-hidden mb-4">
+      <div className="relative aspect-[4/3] bg-light-grey dark:bg-gray-700 rounded-lg overflow-hidden mb-4">
         {!imageError ? (
           <Image
             src={product.image}
@@ -58,8 +58,8 @@ export function ProductCard({ product }: { product: Product }) {
             onError={() => setImageError(true)}
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-light-grey">
-            <div className="text-center text-navy/40">
+          <div className="absolute inset-0 flex items-center justify-center bg-light-grey dark:bg-gray-700">
+            <div className="text-center text-navy/40 dark:text-gray-500">
               <div className="w-12 h-12 mx-auto mb-2 bg-navy/10 rounded-lg" />
               <span className="text-xs">No image</span>
             </div>
@@ -74,8 +74,8 @@ export function ProductCard({ product }: { product: Product }) {
 
       {/* Content */}
       <div className="space-y-2">
-        <h3 className="font-semibold text-navy line-clamp-1">{product.name}</h3>
-        <p className="text-sm text-navy/60 line-clamp-2">{product.description}</p>
+        <h3 className="font-semibold text-navy dark:text-white line-clamp-1">{product.name}</h3>
+        <p className="text-sm text-navy/60 dark:text-gray-400 line-clamp-2">{product.description}</p>
         <p className="text-lg font-bold text-sky">{formatPrice(product.price)}</p>
       </div>
 

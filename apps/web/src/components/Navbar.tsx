@@ -122,7 +122,7 @@ export function Navbar() {
               {/* Cart Button */}
               <Link
                 href="/order"
-                className="relative p-2 rounded-full hover:bg-light-grey transition-colors"
+                className="relative p-2 rounded-full hover:bg-light-grey dark:hover:bg-gray-800 transition-colors"
               >
                 <ShoppingCart size={20} className="text-navy dark:text-gray-200" />
                 {cartCount > 0 && (
@@ -136,7 +136,7 @@ export function Navbar() {
 
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-full hover:bg-light-grey transition-colors"
+                className="p-2 rounded-full hover:bg-light-grey dark:hover:bg-gray-800 transition-colors"
                 aria-label="Toggle theme"
               >
                 {theme === "dark" ? (
@@ -147,12 +147,12 @@ export function Navbar() {
               </button>
 
               {isLoading ? (
-                <div className="w-8 h-8 bg-light-grey rounded-full animate-pulse" />
+                <div className="w-8 h-8 bg-light-grey dark:bg-gray-700 rounded-full animate-pulse" />
               ) : session?.user ? (
                 <div className="relative">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center gap-2 p-1.5 rounded-full hover:bg-light-grey transition-colors"
+                    className="flex items-center gap-2 p-1.5 rounded-full hover:bg-light-grey dark:hover:bg-gray-800 transition-colors"
                   >
                     {session.user.image ? (
                       <Image
@@ -167,7 +167,7 @@ export function Navbar() {
                         <User className="text-sky" size={16} />
                       </div>
                     )}
-                    <ChevronDown size={14} className="text-navy/50 hidden sm:block" />
+                    <ChevronDown size={14} className="text-navy/50 dark:text-gray-400 hidden sm:block" />
                   </button>
 
                   {/* User Dropdown */}
@@ -177,12 +177,12 @@ export function Navbar() {
                         className="fixed inset-0 z-40" 
                         onClick={() => setShowUserMenu(false)} 
                       />
-                      <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl border border-border shadow-lg z-50 overflow-hidden">
-                        <div className="p-3 border-b border-border">
-                          <p className="font-medium text-navy text-sm truncate">
+                      <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl border border-border dark:border-gray-700 shadow-lg z-50 overflow-hidden">
+                        <div className="p-3 border-b border-border dark:border-gray-700">
+                          <p className="font-medium text-navy dark:text-white text-sm truncate">
                             {session.user.name}
                           </p>
-                          <p className="text-xs text-navy/50 truncate">
+                          <p className="text-xs text-navy/50 dark:text-gray-400 truncate">
                             {session.user.email}
                           </p>
                           {isAdmin && (
@@ -197,7 +197,7 @@ export function Navbar() {
                               setShowUserMenu(false);
                               signOut();
                             }}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                           >
                             <LogOut size={16} />
                             Sign Out
@@ -219,7 +219,7 @@ export function Navbar() {
               {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="md:hidden p-2 text-navy hover:bg-light-grey rounded-lg transition-colors"
+                className="md:hidden p-2 text-navy dark:text-gray-200 hover:bg-light-grey dark:hover:bg-gray-800 rounded-lg transition-colors"
                 aria-label="Toggle menu"
               >
                 {isOpen ? <X size={22} /> : <Menu size={22} />}
@@ -243,7 +243,7 @@ export function Navbar() {
                     relative flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors
                     ${active 
                       ? "text-sky" 
-                      : "text-navy/60 hover:text-navy hover:bg-light-grey/50"
+                      : "text-navy/60 dark:text-gray-400 hover:text-navy dark:hover:text-white hover:bg-light-grey/50 dark:hover:bg-gray-800"
                     }
                   `}
                 >
@@ -284,7 +284,7 @@ export function Navbar() {
                       flex items-center gap-3 px-4 py-3.5 rounded-xl transition-colors
                       ${active 
                         ? "bg-sky/10 text-sky" 
-                        : "text-navy/70 hover:bg-light-grey active:bg-light-grey"
+                        : "text-navy/70 dark:text-gray-300 hover:bg-light-grey dark:hover:bg-gray-800 active:bg-light-grey"
                       }
                     `}
                   >

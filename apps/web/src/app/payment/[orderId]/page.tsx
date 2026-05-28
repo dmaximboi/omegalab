@@ -136,10 +136,10 @@ export default function PaymentProcessingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="animate-spin text-blue-600 mx-auto mb-4" size={48} />
-          <p className="text-gray-600">Loading payment...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading payment...</p>
         </div>
       </div>
     );
@@ -147,11 +147,11 @@ export default function PaymentProcessingPage() {
 
   if (error && paymentStatus === "failed") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-lg border p-8 max-w-md text-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-8 max-w-md text-center">
           <AlertCircle className="text-red-600 mx-auto mb-4" size={48} />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Payment Failed</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Payment Failed</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
           <button
             onClick={retryPayment}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
@@ -160,7 +160,7 @@ export default function PaymentProcessingPage() {
           </button>
           <button
             onClick={() => router.push("/order")}
-            className="block w-full mt-3 text-gray-600 hover:text-gray-900"
+            className="block w-full mt-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
           >
             Return to Cart
           </button>
@@ -171,11 +171,11 @@ export default function PaymentProcessingPage() {
 
   if (paymentStatus === "success") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-lg border p-8 max-w-md text-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-8 max-w-md text-center">
           <CheckCircle className="text-green-600 mx-auto mb-4" size={48} />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
-          <p className="text-gray-600">Redirecting to order confirmation...</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Payment Successful!</h2>
+          <p className="text-gray-600 dark:text-gray-400">Redirecting to order confirmation...</p>
           <Loader2 className="animate-spin text-blue-600 mx-auto mt-4" size={24} />
         </div>
       </div>
@@ -183,14 +183,14 @@ export default function PaymentProcessingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg border p-8 max-w-md text-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-8 max-w-md text-center">
         <Loader2 className="animate-spin text-blue-600 mx-auto mb-4" size={48} />
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Processing Payment</h2>
-        <p className="text-gray-600 mb-4">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Processing Payment</h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">
           Order #<span className="font-mono">{orderId.slice(-8).toUpperCase()}</span>
         </p>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Total: ₦{order?.totalAmount?.toLocaleString() || "0"}
         </p>
         {paymentStatus === "processing" && (

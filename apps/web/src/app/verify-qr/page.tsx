@@ -47,11 +47,11 @@ function VerifyQRContent() {
   }, [code]);
 
   return (
-          <div className="bg-white rounded-xl shadow-sm border p-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-8">
             {status === "loading" && (
               <div className="text-center py-8">
                 <Loader2 className="animate-spin mx-auto text-blue-600 mb-4" size={48} />
-                <p className="text-gray-600">Verifying receipt...</p>
+                <p className="text-gray-600 dark:text-gray-400">Verifying receipt...</p>
               </div>
             )}
 
@@ -59,39 +59,39 @@ function VerifyQRContent() {
               <div>
                 <div className="text-center mb-6">
                   <CheckCircle className="mx-auto text-green-500 mb-4" size={64} />
-                  <h1 className="text-2xl font-bold text-gray-900">Receipt Verified</h1>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Receipt Verified</h1>
                   <p className="text-green-600">This is an authentic De-Omega receipt</p>
                 </div>
 
                 <div className="border-t pt-6 space-y-4">
                   <div className="flex items-center gap-3">
-                    <Receipt className="text-gray-400" size={20} />
+                    <Receipt className="text-gray-400 dark:text-gray-500" size={20} />
                     <div>
-                      <p className="text-sm text-gray-500">Order Number</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Order Number</p>
                       <p className="font-semibold">{orderData.orderNumber}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <User className="text-gray-400" size={20} />
+                    <User className="text-gray-400 dark:text-gray-500" size={20} />
                     <div>
-                      <p className="text-sm text-gray-500">Customer</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Customer</p>
                       <p className="font-semibold">{orderData.customerName}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <Calendar className="text-gray-400" size={20} />
+                    <Calendar className="text-gray-400 dark:text-gray-500" size={20} />
                     <div>
-                      <p className="text-sm text-gray-500">Date</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Date</p>
                       <p className="font-semibold">{orderData.date}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <Package className="text-gray-400" size={20} />
+                    <Package className="text-gray-400 dark:text-gray-500" size={20} />
                     <div>
-                      <p className="text-sm text-gray-500">Items</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Items</p>
                       <ul className="font-semibold">
                         {orderData.items.map((item, i) => (
                           <li key={i}>{item.quantity}x {item.name}</li>
@@ -102,7 +102,7 @@ function VerifyQRContent() {
 
                   <div className="border-t pt-4 mt-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Total</span>
+                      <span className="text-gray-600 dark:text-gray-400">Total</span>
                       <span className="text-xl font-bold text-blue-600">
                         ₦{orderData.total.toLocaleString()}
                       </span>
@@ -115,11 +115,11 @@ function VerifyQRContent() {
             {status === "invalid" && (
               <div className="text-center py-8">
                 <XCircle className="mx-auto text-red-500 mb-4" size={64} />
-                <h1 className="text-2xl font-bold text-gray-900">Invalid Receipt</h1>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Invalid Receipt</h1>
                 <p className="text-red-600 mt-2">
                   This QR code is not valid or has expired
                 </p>
-                <p className="text-gray-500 mt-4 text-sm">
+                <p className="text-gray-500 dark:text-gray-400 mt-4 text-sm">
                   If you believe this is an error, please contact support
                 </p>
               </div>
@@ -128,8 +128,8 @@ function VerifyQRContent() {
             {status === "error" && (
               <div className="text-center py-8">
                 <XCircle className="mx-auto text-yellow-500 mb-4" size={64} />
-                <h1 className="text-2xl font-bold text-gray-900">Verification Failed</h1>
-                <p className="text-gray-600 mt-2">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Verification Failed</h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-2">
                   Could not verify the receipt. Please try again.
                 </p>
               </div>
@@ -142,20 +142,20 @@ export default function VerifyQRPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-lg mx-auto px-4 py-12">
           <Link 
             href="/"
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8"
+            className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-8"
           >
             <ArrowLeft size={18} />
             Back to Home
           </Link>
 
           <Suspense fallback={
-            <div className="bg-white rounded-xl shadow-sm border p-8 text-center py-16">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-8 text-center py-16">
               <Loader2 className="animate-spin mx-auto text-blue-600 mb-4" size={48} />
-              <p className="text-gray-600">Loading verification details...</p>
+              <p className="text-gray-600 dark:text-gray-400">Loading verification details...</p>
             </div>
           }>
             <VerifyQRContent />

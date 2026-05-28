@@ -105,20 +105,20 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
+      <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <Link 
               href="/"
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
             >
               <ArrowLeft size={20} />
             </Link>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">My Orders</h1>
-              <p className="text-sm text-gray-500">View your order history</p>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">My Orders</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">View your order history</p>
             </div>
           </div>
         </div>
@@ -130,10 +130,10 @@ export default function OrdersPage() {
             <Loader2 className="animate-spin text-blue-600" size={32} />
           </div>
         ) : authenticated === false ? (
-          <div className="text-center py-12 bg-white rounded-lg border">
-            <LogIn className="mx-auto text-gray-300 mb-4" size={48} />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Sign In Required</h3>
-            <p className="text-gray-500 mb-4">Please sign in to view your orders</p>
+          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700">
+            <LogIn className="mx-auto text-gray-300 dark:text-gray-600 mb-4" size={48} />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Sign In Required</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">Please sign in to view your orders</p>
             <Link
               href="/login?callbackUrl=/orders"
               className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
@@ -143,10 +143,10 @@ export default function OrdersPage() {
             </Link>
           </div>
         ) : orders.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg border">
-            <Package className="mx-auto text-gray-300 mb-4" size={48} />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
-            <p className="text-gray-500 mb-4">Your order history will appear here</p>
+          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700">
+            <Package className="mx-auto text-gray-300 dark:text-gray-600 mb-4" size={48} />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No orders yet</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">Your order history will appear here</p>
             <Link
               href="/catalogue"
               className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
@@ -157,25 +157,25 @@ export default function OrdersPage() {
         ) : (
           <div className="space-y-4">
             {orders.map((order) => (
-              <div key={order.id} className="bg-white rounded-lg border overflow-hidden">
+              <div key={order.id} className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 overflow-hidden">
                 {/* Order Header */}
-                <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
+                <div className="p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {getStatusIcon(order.status)}
                     <div>
-                      <p className="font-semibold text-gray-900">
+                      <p className="font-semibold text-gray-900 dark:text-white">
                         Order #{order.id.slice(0, 8)}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(order.createdAt)}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-gray-900">
+                    <p className="font-bold text-gray-900 dark:text-white">
                       ₦{order.totalAmount.toLocaleString()}
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {getStatusText(order.status)}
                     </p>
                   </div>
@@ -201,14 +201,14 @@ export default function OrdersPage() {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">
+                          <p className="font-medium text-gray-900 dark:text-white truncate">
                             {item.product.name}
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             Qty: {item.quantity} × ₦{item.unitPrice.toLocaleString()}
                           </p>
                         </div>
-                        <p className="font-semibold text-gray-900">
+                        <p className="font-semibold text-gray-900 dark:text-white">
                           ₦{(item.unitPrice * item.quantity).toLocaleString()}
                         </p>
                       </div>
@@ -217,7 +217,7 @@ export default function OrdersPage() {
                 </div>
 
                 {/* Order Footer */}
-                <div className="p-4 border-t bg-gray-50">
+                <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                   <Link
                     href={`/orders/${order.id}`}
                     className="flex items-center justify-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium"

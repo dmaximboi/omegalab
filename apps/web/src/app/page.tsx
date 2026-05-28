@@ -172,7 +172,7 @@ export default function HomePage() {
       </section>
 
       {/* About Section */}
-      <section id="about" className="section bg-light-grey">
+      <section id="about" className="section bg-light-grey dark:bg-gray-800/50">
         <div className="container">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-heading font-bold mb-8 text-center">
@@ -189,16 +189,16 @@ export default function HomePage() {
                 />
               </div>
               <div className="space-y-4">
-                <p className="text-lg text-navy/80 leading-relaxed">
+                <p className="text-lg text-navy/80 dark:text-gray-200 leading-relaxed">
                   <strong>De-Omega Labaffairs Nig. Ltd.</strong> is a premier Nigerian company established to bridge the gap in quality laboratory and medical equipment supply across West Africa.
                 </p>
-                <p className="text-navy/70 leading-relaxed">
+                <p className="text-navy/70 dark:text-gray-300 leading-relaxed">
                   With over a decade of experience, we have built strong partnerships with leading global manufacturers, enabling us to deliver authentic, high-quality equipment at competitive prices.
                 </p>
-                <p className="text-navy/70 leading-relaxed">
+                <p className="text-navy/70 dark:text-gray-300 leading-relaxed">
                   Our team comprises certified engineers, procurement specialists, and industry consultants who understand the unique needs of Nigerian institutions. We don&apos;t just sell equipment—we provide complete solutions from consultation to installation and ongoing support.
                 </p>
-                <p className="text-navy/70 leading-relaxed">
+                <p className="text-navy/70 dark:text-gray-300 leading-relaxed">
                   Based in <strong>Ilorin, Kwara State</strong>, we serve clients nationwide and are committed to advancing scientific research, healthcare delivery, and industrial development in Nigeria.
                 </p>
               </div>
@@ -208,7 +208,7 @@ export default function HomePage() {
       </section>
 
       {/* Services Section */}
-      <section id="services" className="section">
+      <section id="services" className="section dark:bg-gray-900">
         <div className="container">
           <h2 className="text-3xl md:text-4xl font-heading font-bold text-center mb-12">
             Our Services
@@ -226,8 +226,8 @@ export default function HomePage() {
                     quality={70}
                   />
                 </div>
-                <h3 className="text-lg font-semibold mb-2 text-navy">{service.title}</h3>
-                <p className="text-navy/60 text-sm leading-relaxed">{service.desc}</p>
+                <h3 className="text-lg font-semibold mb-2 text-navy dark:text-white">{service.title}</h3>
+                <p className="text-navy/60 dark:text-gray-400 text-sm leading-relaxed">{service.desc}</p>
               </div>
             ))}
           </div>
@@ -235,19 +235,19 @@ export default function HomePage() {
       </section>
 
       {/* Clients Section */}
-      <section className="section bg-light-grey">
+      <section className="section bg-light-grey dark:bg-gray-800/50">
         <div className="container">
           <h2 className="text-3xl md:text-4xl font-heading font-bold text-center mb-4">
             Who We Serve
           </h2>
-          <p className="text-center text-navy/60 mb-12 max-w-2xl mx-auto">
+          <p className="text-center text-navy/60 dark:text-gray-400 mb-12 max-w-2xl mx-auto">
             We are proud to partner with leading institutions across Nigeria, providing them with reliable equipment and exceptional service.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {clients.map((client, i) => (
-              <div key={i} className="bg-white rounded-xl p-5 border border-border hover:border-sky/30 hover:shadow-soft transition-all">
-                <h4 className="font-semibold text-navy mb-2">{client.name}</h4>
-                <p className="text-sm text-navy/60">{client.desc}</p>
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-border dark:border-gray-700 hover:border-sky/30 hover:shadow-soft transition-all">
+                <h4 className="font-semibold text-navy dark:text-white mb-2">{client.name}</h4>
+                <p className="text-sm text-navy/60 dark:text-gray-400">{client.desc}</p>
               </div>
             ))}
           </div>

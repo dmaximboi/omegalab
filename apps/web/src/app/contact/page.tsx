@@ -86,12 +86,12 @@ export default function ContactPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-light-grey">
+      <main className="min-h-screen bg-light-grey dark:bg-gray-900">
         {/* Header */}
-        <section className="bg-white border-b border-border">
+        <section className="bg-white dark:bg-gray-800 border-b border-border dark:border-gray-700">
           <div className="container py-12">
             <h1 className="page-title mb-2">Contact Us</h1>
-            <p className="text-navy/60">
+            <p className="text-navy/60 dark:text-gray-400">
               Get in touch with our team for inquiries and support
             </p>
           </div>
@@ -115,7 +115,7 @@ export default function ContactPage() {
                         </div>
                         <div>
                           <h3 className="font-semibold mb-1">Address</h3>
-                          <p className="text-sm text-navy/60">
+                          <p className="text-sm text-navy/60 dark:text-gray-400">
                             {contactInfo?.address || "Loading..."}
                           </p>
                         </div>
@@ -129,7 +129,7 @@ export default function ContactPage() {
                         </div>
                         <div>
                           <h3 className="font-semibold mb-1">Phone</h3>
-                          <p className="text-sm text-navy/60">
+                          <p className="text-sm text-navy/60 dark:text-gray-400">
                             {contactInfo?.phone || "Loading..."}
                           </p>
                         </div>
@@ -143,7 +143,7 @@ export default function ContactPage() {
                         </div>
                         <div>
                           <h3 className="font-semibold mb-1">Email</h3>
-                          <p className="text-sm text-navy/60">
+                          <p className="text-sm text-navy/60 dark:text-gray-400">
                             {contactInfo?.email || "Loading..."}
                           </p>
                         </div>
@@ -160,7 +160,7 @@ export default function ContactPage() {
                     <div className="text-center py-8">
                       <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
                       <h3 className="text-xl font-semibold mb-2">Message Sent!</h3>
-                      <p className="text-navy/60 mb-6">
+                      <p className="text-navy/60 dark:text-gray-400 mb-6">
                         Thank you for contacting us. We&apos;ll get back to you soon.
                       </p>
                       <button
@@ -253,7 +253,7 @@ export default function ContactPage() {
                       />
 
                       {error && (
-                        <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg">
+                        <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm rounded-lg">
                           {error}
                         </div>
                       )}

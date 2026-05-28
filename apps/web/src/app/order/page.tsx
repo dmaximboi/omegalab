@@ -112,7 +112,7 @@ export default function OrderPage() {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen bg-light-grey flex items-center justify-center">
+        <main className="min-h-screen bg-light-grey dark:bg-gray-900 flex items-center justify-center">
           <Loader2 className="w-8 h-8 text-sky animate-spin" />
         </main>
       </>
@@ -126,7 +126,7 @@ export default function OrderPage() {
         onLoad={() => setFlwLoaded(true)}
       />
       <Navbar />
-      <main className="min-h-screen bg-light-grey">
+      <main className="min-h-screen bg-light-grey dark:bg-gray-900">
         <div className="container py-8">
           <h1 className="page-title mb-8">Your Order</h1>
 
@@ -138,9 +138,9 @@ export default function OrderPage() {
 
           {items.length === 0 ? (
             <div className="text-center py-20">
-              <ShoppingCart className="w-16 h-16 text-navy/20 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-navy mb-2">Your cart is empty</h3>
-              <p className="text-navy/60 mb-6">
+              <ShoppingCart className="w-16 h-16 text-navy/20 dark:text-gray-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-navy dark:text-white mb-2">Your cart is empty</h3>
+              <p className="text-navy/60 dark:text-gray-400 mb-6">
                 Add products from the catalogue to get started
               </p>
               <Link href="/catalogue" className="btn btn-primary">
@@ -154,7 +154,7 @@ export default function OrderPage() {
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className="bg-white rounded-xl border p-4 flex gap-4"
+                    className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4 flex gap-4"
                   >
                     <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                       {item.image ? (
@@ -171,7 +171,7 @@ export default function OrderPage() {
                     </div>
 
                     <div className="flex-1">
-                      <h3 className="font-semibold text-navy mb-1">{item.name}</h3>
+                      <h3 className="font-semibold text-navy dark:text-white mb-1">{item.name}</h3>
                       <p className="text-sky font-semibold mb-2">
                         ₦{item.price.toLocaleString()}
                       </p>
@@ -205,7 +205,7 @@ export default function OrderPage() {
                     </div>
 
                     <div className="text-right">
-                      <p className="font-semibold text-navy">
+                      <p className="font-semibold text-navy dark:text-white">
                         ₦{(item.price * item.quantity).toLocaleString()}
                       </p>
                     </div>
@@ -215,17 +215,17 @@ export default function OrderPage() {
 
               {/* Checkout Form */}
               <div className="space-y-6">
-                <div className="bg-white rounded-xl border p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-6">
                   <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
                   <div className="space-y-3 mb-6">
                     <div className="flex justify-between text-sm">
-                      <span className="text-navy/60">Subtotal</span>
+                      <span className="text-navy/60 dark:text-gray-400">Subtotal</span>
                       <span className="font-medium">
                         ₦{total.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-navy/60">Delivery</span>
+                      <span className="text-navy/60 dark:text-gray-400">Delivery</span>
                       <span className="font-medium text-green-600">Calculated at checkout</span>
                     </div>
                     <div className="border-t pt-3">

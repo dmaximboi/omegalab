@@ -63,26 +63,26 @@ function OrderSuccessContent() {
               </button>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border p-8 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border dark:border-gray-700 p-8 shadow-sm">
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-10 h-10 text-green-600" />
               </div>
 
-              <h1 className="text-2xl font-bold text-navy mb-2">Order Confirmed!</h1>
-              <p className="text-navy/60 mb-6">
+              <h1 className="text-2xl font-bold text-navy dark:text-white mb-2">Order Confirmed!</h1>
+              <p className="text-navy/60 dark:text-gray-400 mb-6">
                 Thank you for your order. We&apos;ve received your payment and will begin processing your order shortly.
               </p>
 
               {orderId && (
-                <div className="bg-light-grey rounded-lg p-4 mb-6">
-                  <p className="text-sm text-navy/60 mb-1">Order Reference</p>
-                  <p className="font-mono font-semibold text-navy">
+                <div className="bg-light-grey dark:bg-gray-700 rounded-lg p-4 mb-6">
+                  <p className="text-sm text-navy/60 dark:text-gray-400 mb-1">Order Reference</p>
+                  <p className="font-mono font-semibold text-navy dark:text-white">
                     #{orderId.slice(-8).toUpperCase()}
                   </p>
                 </div>
               )}
 
-              <p className="text-sm text-navy/60 mb-6">
+              <p className="text-sm text-navy/60 dark:text-gray-400 mb-6">
                 A confirmation email will be sent to you with your order details and tracking information.
               </p>
 
@@ -111,7 +111,7 @@ function OrderSuccessContent() {
                 </Link>
                 <Link
                   href="/"
-                  className="flex items-center justify-center gap-2 text-navy/60 hover:text-navy px-6 py-3 rounded-lg transition"
+                  className="flex items-center justify-center gap-2 text-navy/60 dark:text-gray-400 hover:text-navy dark:hover:text-white px-6 py-3 rounded-lg transition"
                 >
                   <Home size={18} />
                   Back to Home
@@ -127,10 +127,10 @@ export default function OrderSuccessPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-light-grey flex items-center justify-center py-8">
+      <main className="min-h-screen bg-light-grey dark:bg-gray-900 flex items-center justify-center py-8">
         <Suspense fallback={
           <div className="max-w-md mx-auto text-center px-4 w-full">
-            <div className="bg-white rounded-2xl border p-8 shadow-sm flex items-center justify-center">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border dark:border-gray-700 p-8 shadow-sm flex items-center justify-center">
               <Loader2 className="w-8 h-8 text-sky animate-spin" />
             </div>
           </div>

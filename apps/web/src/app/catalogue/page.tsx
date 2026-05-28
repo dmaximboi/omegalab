@@ -49,19 +49,19 @@ export default function CataloguePage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-light-grey">
+      <main className="min-h-screen bg-light-grey dark:bg-gray-900">
         {/* Header */}
-        <section className="bg-white border-b border-border">
+        <section className="bg-white dark:bg-gray-800 border-b border-border dark:border-gray-700">
           <div className="container py-8 md:py-12">
             <h1 className="page-title mb-2">Product Catalogue</h1>
-            <p className="text-navy/60 mb-6">
+            <p className="text-navy/60 dark:text-gray-400 mb-6">
               Browse our selection of quality laboratory and medical equipment
             </p>
 
             {/* Search and Filter */}
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/40" size={20} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/40 dark:text-gray-500" size={20} />
                 <input
                   type="text"
                   placeholder="Search products..."
@@ -71,11 +71,11 @@ export default function CataloguePage() {
                 />
               </div>
               <div className="relative">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/40" size={20} />
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/40 dark:text-gray-500" size={20} />
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="input pl-10 pr-8 appearance-none bg-white min-w-[150px]"
+                  className="input pl-10 pr-8 appearance-none bg-white dark:bg-gray-800 min-w-[150px]"
                 >
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>
@@ -107,11 +107,11 @@ export default function CataloguePage() {
               </div>
             ) : filteredProducts.length === 0 ? (
               <div className="text-center py-20">
-                <div className="w-20 h-20 bg-navy/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="text-navy/30" size={32} />
+                <div className="w-20 h-20 bg-navy/5 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="text-navy/30 dark:text-gray-600" size={32} />
                 </div>
-                <h3 className="text-lg font-semibold text-navy mb-2">No Products Found</h3>
-                <p className="text-navy/60 max-w-md mx-auto">
+                <h3 className="text-lg font-semibold text-navy dark:text-white mb-2">No Products Found</h3>
+                <p className="text-navy/60 dark:text-gray-400 max-w-md mx-auto">
                   {products.length === 0 
                     ? "Products will be displayed here once they are added to the database."
                     : "No products match your search criteria. Try adjusting your filters."}
