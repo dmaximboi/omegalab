@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { PrismaClient, OrderStatus, Role } from "@prisma/client";
+import { PrismaClient, OrderStatus } from "@prisma/client";
 import Decimal from "decimal.js";
 import { generateTxRef, generateReceiptHash } from "@/lib/flutterwave";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -41,8 +43,14 @@ export async function POST(request: Request) {
   const userAgent = request.headers.get("user-agent")?.slice(0, 500) || "unknown";
 
   try {
+    // Require authenticated user — email comes from session, not form
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id || !session?.user?.email) {
+      return NextResponse.json({ error: "Please sign in to place an order" }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { items, name, email, phone, address } = body;
+    const { items, name, phone, address } = body;
     // NOTE: we intentionally ignore frontend "total" — server computes it
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -53,14 +61,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Too many items" }, { status: 400 });
     }
 
-    if (!name || !email || !phone || !address) {
+    if (!name || !phone || !address) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 });
-    }
-
-    // Validate email format server-side
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
     }
 
     // Validate phone (basic)
@@ -142,16 +144,14 @@ export async function POST(request: Request) {
       });
     }
 
-    // Create or find user
-    const guestUser = await getPrisma().user.upsert({
-      where: { email },
-      create: {
-        email,
-        name: String(name).slice(0, 100),
-        role: Role.USER,
-      },
-      update: {},
+    // Use the authenticated user directly
+    const sessionUser = await getPrisma().user.findUnique({
+      where: { id: session.user.id },
     });
+
+    if (!sessionUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 401 });
+    }
 
     // Generate HMAC receipt hash with salt (orderId not available yet, use txRef as unique identifier)
     const { hash: receiptHash, salt: receiptSalt } = generateReceiptHash(txRef, txRef);
@@ -160,7 +160,7 @@ export async function POST(request: Request) {
     // STEP 1: INITIATED — Create order in database
     const order = await getPrisma().order.create({
       data: {
-        userId: guestUser.id,
+        userId: sessionUser.id,
         totalAmount: totalAsNumber,
         receiptHash,
         receiptSalt,
@@ -180,7 +180,7 @@ export async function POST(request: Request) {
     await logTransactionStep(order.id, txRef, "INITIATED", ipAddress, {
       itemCount: orderItems.length,
       total: totalAsNumber,
-      userId: guestUser.id,
+      userId: sessionUser.id,
     });
 
     console.log("[ORDER] Step 1 INITIATED:", order.id, "txRef:", txRef, "amount:", totalAsNumber);
@@ -190,8 +190,8 @@ export async function POST(request: Request) {
       txRef,
       paymentToken: (order as any).paymentToken,
       amount: totalAsNumber,
-      userEmail: guestUser.email,
-      userName: guestUser.name,
+      userEmail: sessionUser.email,
+      userName: sessionUser.name,
     });
   } catch (error: any) {
     console.error("[ORDER] Create error:", error?.message || error);

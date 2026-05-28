@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
-import { Send, MapPin, Phone, Mail, CheckCircle, Loader2 } from "lucide-react";
+import { Send, MapPin, Phone, Mail, CheckCircle, Loader2, Facebook } from "lucide-react";
 
 interface ContactInfo {
   address: string;
@@ -146,6 +146,25 @@ export default function ContactPage() {
                           <p className="text-sm text-navy/60 dark:text-gray-400">
                             {contactInfo?.email || "Loading..."}
                           </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="card">
+                      <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 bg-sky/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Facebook className="text-sky" size={20} />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold mb-1">Facebook</h3>
+                          <a
+                            href="https://web.facebook.com/people/De-omega-Labaffairs-Ltd/100066186596625/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-sky hover:underline"
+                          >
+                            De-omega Labaffairs Ltd
+                          </a>
                         </div>
                       </div>
                     </div>

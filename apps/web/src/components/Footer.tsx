@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
+import { Phone, Mail, MapPin, MessageCircle, Facebook } from "lucide-react";
 
 interface CompanyConfig {
   company: {
@@ -148,6 +148,17 @@ export function Footer() {
                   <span>{config.company.address}</span>
                 </li>
               )}
+              <li className="flex items-start gap-2">
+                <Facebook size={16} className="mt-0.5 flex-shrink-0" />
+                <a
+                  href="https://web.facebook.com/people/De-omega-Labaffairs-Ltd/100066186596625/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
+                  De-omega Labaffairs Ltd
+                </a>
+              </li>
             </ul>
           </div>
         </div>

@@ -24,7 +24,6 @@ export default function OrderPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
-    email: "",
     phone: "",
     address: "",
   });
@@ -253,20 +252,6 @@ export default function OrderPage() {
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         className="input w-full"
                         placeholder="Your full name"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email *
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="input w-full"
-                        placeholder="your@email.com"
                       />
                     </div>
 
