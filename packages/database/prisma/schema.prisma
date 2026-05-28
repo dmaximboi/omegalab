@@ -150,6 +150,8 @@ model Notification {
   body      String
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+
+  @@index([userId, isRead, createdAt])
 }
 
 model AuditLog {

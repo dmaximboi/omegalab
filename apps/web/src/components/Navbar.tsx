@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { cart } from "@/lib/cart";
 import { useTheme } from "@/lib/theme";
+import NotificationBell from "@/components/NotificationBell";
 
 const NAV_TABS = [
   { href: "/", label: "Home", icon: Home },
@@ -130,6 +131,8 @@ export function Navbar() {
                   </span>
                 )}
               </Link>
+
+              {session?.user && <NotificationBell />}
 
               <button
                 onClick={toggleTheme}
