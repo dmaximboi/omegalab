@@ -20,21 +20,25 @@ export function Footer() {
 
   useEffect(() => {
     const fetchConfig = async () => {
+      const fallback = {
+        company: {
+          name: "De-Omega Labaffairs Nig. Ltd.",
+          email: "info@omegalabaffairs.com",
+          phone: "+2348132862637",
+          address: "Ilorin, Kwara State, Nigeria",
+          whatsapp: "+2348132862637",
+        },
+      };
       try {
         const res = await fetch("/api/config");
-        const data = await res.json();
-        setConfig(data);
+        if (res.ok) {
+          const data = await res.json();
+          setConfig(data);
+        } else {
+          setConfig(fallback);
+        }
       } catch {
-        // Use fallback values
-        setConfig({
-          company: {
-            name: "De-Omega Labaffairs Nig. Ltd.",
-            email: "info@omegalabaffairs.com",
-            phone: "+2348132862637",
-            address: "Ilorin, Kwara State, Nigeria",
-            whatsapp: "+2348132862637",
-          },
-        });
+        setConfig(fallback);
       }
     };
     fetchConfig();

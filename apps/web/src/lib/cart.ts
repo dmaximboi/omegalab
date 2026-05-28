@@ -30,6 +30,30 @@ function isValidCartItem(item: unknown): item is CartItem {
   );
 }
 
+// Debounce server sync to avoid excessive API calls
+let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function debouncedServerSync(items: CartItem[]) {
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(() => {
+    syncCartToServer(items);
+  }, 1000);
+}
+
+async function syncCartToServer(items: CartItem[]) {
+  try {
+    await fetch("/api/cart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: items.map((item) => ({ id: item.id, quantity: item.quantity })),
+      }),
+    });
+  } catch {
+    // Fail silently — localStorage is the fallback
+  }
+}
+
 export const cart = {
   getItems(): CartItem[] {
     if (typeof window === "undefined") return [];
@@ -102,6 +126,8 @@ export const cart = {
   clear() {
     if (typeof window !== "undefined") {
       localStorage.removeItem(CART_STORAGE_KEY);
+      // Also clear on server
+      fetch("/api/cart", { method: "DELETE" }).catch(() => {});
     }
   },
 
@@ -121,9 +147,36 @@ export const cart = {
         // Only save validated items
         const safe = items.filter(isValidCartItem).slice(0, MAX_CART_ITEMS);
         localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(safe));
+        // Sync to server in background (debounced)
+        debouncedServerSync(safe);
       } catch {
         // localStorage full or disabled — fail silently
       }
+    }
+  },
+
+  // Load cart from server and merge with localStorage
+  async loadFromServer(): Promise<CartItem[]> {
+    try {
+      const res = await fetch("/api/cart");
+      if (!res.ok) return this.getItems();
+      const data = await res.json();
+      if (data.items && Array.isArray(data.items) && data.items.length > 0) {
+        // Server cart takes priority — save to localStorage
+        const validItems = data.items.filter(isValidCartItem).slice(0, MAX_CART_ITEMS);
+        if (validItems.length > 0) {
+          localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(validItems));
+          return validItems;
+        }
+      }
+      // If server cart is empty but localStorage has items, sync up to server
+      const localItems = this.getItems();
+      if (localItems.length > 0) {
+        debouncedServerSync(localItems);
+      }
+      return localItems;
+    } catch {
+      return this.getItems();
     }
   },
 };

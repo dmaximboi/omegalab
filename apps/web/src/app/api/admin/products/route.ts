@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, description, price, category, images, isActive } = body;
+    const { name, slug: customSlug, description, price, category, images, isActive } = body;
 
     console.log("[ADMIN] Product create data:", { name, price, category, imageCount: images?.length });
 
@@ -68,12 +68,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Generate slug from name
-    const slug = name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "")
-      + "-" + crypto.randomBytes(4).toString("hex");
+    // Use custom slug if provided, otherwise generate from name
+    const slug = customSlug
+      ? customSlug.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/(^-|-$)/g, "")
+      : name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "")
+          + "-" + crypto.randomBytes(4).toString("hex");
 
     const product = await getPrisma().product.create({
       data: {
@@ -94,6 +96,20 @@ export async function POST(request: Request) {
     });
 
     console.log("[ADMIN] Product created successfully:", product.id);
+
+    if (session.user.id) {
+      await getPrisma().auditLog.create({
+        data: {
+          adminId: session.user.id,
+          action: "PRODUCT_CREATED",
+          entityId: product.id,
+          newValue: JSON.stringify({ name, price, category }),
+          ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown",
+          userAgent: request.headers.get("user-agent")?.slice(0, 500) || "unknown",
+        },
+      }).catch(() => {});
+    }
+
     return NextResponse.json({ product }, { status: 201 });
   } catch (error) {
     console.error("[ADMIN] Product create error:", error);

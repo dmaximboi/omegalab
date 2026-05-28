@@ -20,6 +20,7 @@ interface ProductImage {
 interface Product {
   id: string;
   name: string;
+  slug: string | null;
   description: string;
   price: number;
   category: string;
@@ -34,11 +35,13 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
+    slug: "",
     description: "",
     price: "",
     category: "",
     isActive: true,
   });
+  const [deletingImage, setDeletingImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProduct();
@@ -52,6 +55,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         setProduct(data);
         setFormData({
           name: data.name,
+          slug: data.slug || "",
           description: data.description,
           price: data.price.toString(),
           category: data.category,
@@ -75,6 +79,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.name,
+          slug: formData.slug || undefined,
           description: formData.description,
           price: parseFloat(formData.price),
           category: formData.category,
@@ -89,6 +94,31 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       console.error("Failed to update product:", error);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteImage = async (imageId: string) => {
+    if (!confirm("Delete this image permanently? This cannot be undone.")) return;
+    setDeletingImage(imageId);
+
+    try {
+      const res = await fetch(
+        `/api/admin/products/${params.id}/images?imageId=${imageId}`,
+        { method: "DELETE" }
+      );
+
+      if (res.ok) {
+        // Remove image from local state
+        setProduct((prev) =>
+          prev ? { ...prev, images: prev.images.filter((img) => img.id !== imageId) } : prev
+        );
+      } else {
+        alert("Failed to delete image. Please try again.");
+      }
+    } catch {
+      alert("Failed to delete image. Please try again.");
+    } finally {
+      setDeletingImage(null);
     }
   };
 
@@ -148,6 +178,23 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
+            </div>
+
+            {/* Slug */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Slug (URL-friendly identifier)
+              </label>
+              <input
+                type="text"
+                value={formData.slug}
+                onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g. digital-microscope-x200"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Leave empty to auto-generate. Used in product URLs.
+              </p>
             </div>
 
             {/* Description */}
@@ -212,18 +259,35 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Current Images ({product.images.length})
               </label>
-              <div className="grid grid-cols-4 gap-2">
-                {product.images.map((image) => (
-                  <div key={image.id} className="relative aspect-square">
-                    <Image
-                      src={image.url}
-                      alt="Product image"
-                      fill
-                      className="object-cover rounded-lg"
-                    />
-                  </div>
-                ))}
-              </div>
+              {product.images.length === 0 ? (
+                <p className="text-sm text-gray-500">No images uploaded yet.</p>
+              ) : (
+                <div className="grid grid-cols-4 gap-2">
+                  {product.images.map((image) => (
+                    <div key={image.id} className="relative aspect-square group">
+                      <Image
+                        src={image.url}
+                        alt="Product image"
+                        fill
+                        className="object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteImage(image.id)}
+                        disabled={deletingImage === image.id}
+                        className="absolute top-1 right-1 p-1.5 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                        title="Delete image"
+                      >
+                        {deletingImage === image.id ? (
+                          <Loader2 className="animate-spin" size={12} />
+                        ) : (
+                          <Trash2 size={12} />
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}

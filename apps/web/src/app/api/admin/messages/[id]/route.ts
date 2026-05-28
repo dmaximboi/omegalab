@@ -37,6 +37,18 @@ export async function DELETE(
       where: { id: params.id },
     });
 
+    if (session.user?.id) {
+      await getPrisma().auditLog.create({
+        data: {
+          adminId: session.user.id,
+          action: "MESSAGE_DELETED",
+          entityId: params.id,
+          ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown",
+          userAgent: request.headers.get("user-agent")?.slice(0, 500) || "unknown",
+        },
+      }).catch(() => {});
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[ADMIN] Message delete error:", error);

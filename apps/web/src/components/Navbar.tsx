@@ -52,8 +52,17 @@ export function Navbar() {
 
     updateCartCount();
     window.addEventListener("storage", updateCartCount);
+
+    // If user is logged in, sync cart from server
+    if (session?.user) {
+      cart.loadFromServer().then(() => {
+        updateCartCount();
+        window.dispatchEvent(new Event("storage"));
+      });
+    }
+
     return () => window.removeEventListener("storage", updateCartCount);
-  }, []);
+  }, [session?.user]);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -87,9 +96,9 @@ export function Navbar() {
   }, [pathname]);
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-border">
+    <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-border dark:border-gray-700">
       {/* Top Bar */}
-      <div className="border-b border-border/50">
+      <div className="border-b border-border/50 dark:border-gray-700">
         <div className="container">
           <div className="flex items-center justify-between h-14">
             {/* Logo */}
@@ -102,7 +111,7 @@ export function Navbar() {
                 className="rounded-xl"
               />
               <div>
-                <span className="font-heading font-bold text-navy text-sm">De-Omega</span>
+                <span className="font-heading font-bold text-navy dark:text-white text-sm">De-Omega</span>
                 <span className="text-[10px] text-navy/50 block -mt-0.5 hidden sm:block">Labaffairs Nig. Ltd.</span>
               </div>
             </Link>
@@ -114,7 +123,7 @@ export function Navbar() {
                 href="/order"
                 className="relative p-2 rounded-full hover:bg-light-grey transition-colors"
               >
-                <ShoppingCart size={20} className="text-navy" />
+                <ShoppingCart size={20} className="text-navy dark:text-gray-200" />
                 {cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-sky text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
                     {cartCount}
@@ -128,7 +137,7 @@ export function Navbar() {
                 aria-label="Toggle theme"
               >
                 {theme === "dark" ? (
-                  <Sun className="text-navy" size={20} />
+                  <Sun className="text-navy dark:text-yellow-400" size={20} />
                 ) : (
                   <Moon className="text-navy" size={20} />
                 )}
@@ -258,7 +267,7 @@ export function Navbar() {
           {/* Menu */}
           <div 
             ref={menuRef}
-            className="fixed top-[57px] left-0 right-0 bg-white border-b border-border z-50 md:hidden max-h-[calc(100vh-57px)] overflow-y-auto"
+            className="fixed top-[57px] left-0 right-0 bg-white dark:bg-gray-900 border-b border-border dark:border-gray-700 z-50 md:hidden max-h-[calc(100vh-57px)] overflow-y-auto"
           >
             <nav className="container py-3">
               {tabs.map((tab) => {

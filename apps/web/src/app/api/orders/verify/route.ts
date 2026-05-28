@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
 import Decimal from "decimal.js";
 import { verifyFlutterwavePayment } from "@/lib/flutterwave";
+import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +27,12 @@ function getPrisma() {
 
 const EXPECTED_CURRENCY = "NGN";
 
+// Timing-safe string comparison to prevent timing attacks on token validation
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
+
 export async function POST(request: Request) {
   // Capture IP for audit
   const forwarded = request.headers.get("x-forwarded-for");
@@ -34,8 +43,14 @@ export async function POST(request: Request) {
     const { transaction_id, orderId, paymentToken } = body;
     // NOTE: we do NOT use tx_ref from frontend — we match from DB
 
-    if (!transaction_id || !orderId) {
+    if (!transaction_id || !orderId || !paymentToken) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    // Verify caller is authenticated
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Find the order — use the DB's own txRef, not the one from frontend
@@ -45,11 +60,18 @@ export async function POST(request: Request) {
 
     if (!order) {
       await logPayment({ txRef: null, flwRef: String(transaction_id), status: "order_not_found", ipAddress });
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      // Use generic message to prevent order ID enumeration
+      return NextResponse.json({ error: "Payment verification failed" }, { status: 400 });
     }
 
-    // Check if token is provided and valid
-    if (paymentToken && order.paymentToken && order.paymentToken !== paymentToken) {
+    // Verify caller owns this order
+    if (order.userId !== session.user.id && !session.user.isAdmin) {
+      await logPayment({ orderId, txRef: order.txRef, flwRef: String(transaction_id), status: "step:FAILED:unauthorized_user", ipAddress });
+      return NextResponse.json({ error: "Payment verification failed" }, { status: 403 });
+    }
+
+    // Payment token is REQUIRED and must match (timing-safe comparison)
+    if (!order.paymentToken || !timingSafeEqual(paymentToken, order.paymentToken)) {
       await logPayment({ orderId, txRef: order.txRef, flwRef: String(transaction_id), status: "step:FAILED:invalid_token", ipAddress });
       return NextResponse.json({ error: "Invalid payment token" }, { status: 403 });
     }

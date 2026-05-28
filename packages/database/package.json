@@ -12,8 +12,6 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
-    "@libsql/client": "^0.7.0",
-    "@prisma/adapter-libsql": "^5.19.0",
     "@prisma/client": "^5.19.0"
   },
   "devDependencies": {

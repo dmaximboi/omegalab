@@ -39,6 +39,11 @@ export async function POST(
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
+    // Limit message length to prevent abuse
+    if (message.trim().length > 500) {
+      return NextResponse.json({ error: "Message too long (max 500 chars)" }, { status: 400 });
+    }
+
     const order = await getPrisma().order.findUnique({
       where: { id: params.id },
       include: { user: { select: { email: true, name: true } } },
@@ -57,6 +62,20 @@ export async function POST(
         type: "ORDER_UPDATE",
       },
     });
+
+    // Audit log
+    if (session.user?.id) {
+      await getPrisma().auditLog.create({
+        data: {
+          adminId: session.user.id,
+          action: "NOTIFICATION_SENT",
+          entityId: params.id,
+          newValue: message.trim().slice(0, 200),
+          ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown",
+          userAgent: request.headers.get("user-agent")?.slice(0, 500) || "unknown",
+        },
+      }).catch(() => {});
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

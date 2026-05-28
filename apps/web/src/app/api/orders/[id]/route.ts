@@ -36,6 +36,7 @@ export async function GET(
     const order = await getPrisma().order.findUnique({
       where: { id: params.id },
       include: {
+        user: { select: { email: true, name: true } },
         items: {
           include: {
             product: {
@@ -61,11 +62,15 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Only expose fields needed by the frontend — never leak paymentToken or receiptSalt
     return NextResponse.json({
       id: order.id,
       totalAmount: Number(order.totalAmount),
       status: order.status,
       txRef: order.txRef,
+      userEmail: (order as any).user?.email,
+      userName: (order as any).user?.name,
+      userPhone: (order as any).phone,
       createdAt: order.createdAt.toISOString(),
       items: order.items.map((item: any) => ({
         id: item.id,

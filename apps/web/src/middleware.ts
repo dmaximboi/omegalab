@@ -256,7 +256,7 @@ export async function middleware(request: NextRequest) {
     "/xmlrpc.php",
     "/.env",
     "/.git",
-    "/config",
+    "/config.php",
     "/backup",
     "/phpmyadmin",
     "/admin.php",

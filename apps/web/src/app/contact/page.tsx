@@ -28,6 +28,14 @@ export default function ContactPage() {
       if (res.ok) {
         const data = await res.json();
         setContactInfo(data);
+      } else {
+        // API returned non-OK — use fallback
+        setContactInfo({
+          address: "Ilorin, Kwara State, Nigeria",
+          phone: "+2348132862637",
+          email: "info@omegalabaffairs.com",
+          whatsapp: "+2348132862637",
+        });
       }
     } catch {
       // Use fallback values

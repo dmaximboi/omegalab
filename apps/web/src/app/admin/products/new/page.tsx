@@ -14,6 +14,7 @@ export default function NewProductPage() {
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     name: "",
+    slug: "",
     description: "",
     price: "",
     category: "",
@@ -53,6 +54,7 @@ export default function NewProductPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
+          slug: formData.slug || undefined,
           price: parseFloat(formData.price),
         }),
       });
@@ -99,6 +101,22 @@ export default function NewProductPage() {
               className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter product name"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Slug (URL-friendly identifier)
+            </label>
+            <input
+              type="text"
+              value={formData.slug}
+              onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })}
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="e.g. digital-microscope-x200 (auto-generated if empty)"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Leave empty to auto-generate from name. Used in product URLs to avoid duplicates.
+            </p>
           </div>
 
           <div>

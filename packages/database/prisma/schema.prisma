@@ -1,6 +1,5 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -9,12 +8,26 @@ datasource db {
   directUrl = env("DIRECT_DATABASE_URL")
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
+enum OrderStatus {
+  INITIATED
+  PROCESSING
+  VERIFYING
+  PAID
+  FAILED
+  CANCELLED
+}
+
 model User {
   id            String         @id @default(cuid())
   email         String         @unique
   name          String?
   image         String?
-  role          String         @default("USER")
+  role          Role           @default(USER)
   emailVerified DateTime?
   failedLogins  Int            @default(0)
   lockedUntil   DateTime?
@@ -23,6 +36,7 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   orders        Order[]
+  cartItems     CartItem[]
   notifications Notification[]
   sessions      Session[]
   auditLogs     AuditLog[]     @relation("AdminAuditLogs")
@@ -51,6 +65,7 @@ model Product {
   updatedAt   DateTime       @updatedAt
   images      ProductImage[]
   orderItems  OrderItem[]
+  cartItems   CartItem[]
 }
 
 model ProductImage {
@@ -69,7 +84,7 @@ model Order {
   user            User        @relation(fields: [userId], references: [id])
   items           OrderItem[]
   totalAmount     Decimal
-  status          String      @default("PENDING")
+  status          OrderStatus @default(INITIATED)
   flwRef          String?
   txRef           String      @unique
   receiptHash     String      @unique
@@ -80,9 +95,13 @@ model Order {
   ipAddress       String?
   userAgent       String?
   paymentToken    String?     @unique // Anti-duplication token
-  tokenExpiresAt  DateTime?   // Token expiry (2 hours)
+  tokenExpiresAt  DateTime?   // Token expiry (1 hour)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([status, createdAt])
+  @@index([ipAddress, createdAt])
 }
 
 model OrderItem {
@@ -94,6 +113,19 @@ model OrderItem {
   quantity  Int
   unitPrice Decimal
   createdAt DateTime @default(now())
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId])
 }
 
 model ContactMessage {
@@ -142,6 +174,9 @@ model SecurityEvent {
   description String
   metadata    String?
   createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([eventType, createdAt])
 }
 
 model RateLimitLog {
@@ -164,4 +199,7 @@ model PaymentLog {
   webhookData   String?
   ipAddress     String?
   createdAt     DateTime @default(now())
+
+  @@index([orderId])
+  @@index([txRef])
 }

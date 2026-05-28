@@ -148,7 +148,7 @@ export async function POST(request: Request) {
       create: {
         email,
         name: String(name).slice(0, 100),
-        role: "customer",
+        role: "USER",
       },
       update: {},
     });
@@ -193,9 +193,18 @@ export async function POST(request: Request) {
       userEmail: guestUser.email,
       userName: guestUser.name,
     });
-  } catch (error) {
-    console.error("[ORDER] Create error:", error);
-    return NextResponse.json({ error: "Could not create order. Please try again." }, { status: 500 });
+  } catch (error: any) {
+    console.error("[ORDER] Create error:", error?.message || error);
+    console.error("[ORDER] Stack:", error?.stack);
+    
+    // Provide more specific error messages for known issues
+    const message = error?.code === "P2002"
+      ? "Duplicate order detected. Please try again."
+      : error?.code === "P1001" || error?.code === "P1002"
+        ? "Database connection failed. Please try again in a moment."
+        : "Could not create order. Please try again.";
+    
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

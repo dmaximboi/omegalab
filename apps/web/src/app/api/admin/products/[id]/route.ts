@@ -65,23 +65,44 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { name, description, price, category, isActive } = body;
+    const { name, slug, description, price, category, isActive } = body;
+
+    // Build update data
+    const updateData: any = {
+      name,
+      description,
+      price: parseFloat(price),
+      category,
+      isActive,
+    };
+
+    // Only update slug if provided
+    if (slug) {
+      updateData.slug = slug.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/(^-|-$)/g, "");
+    }
 
     const product = await getPrisma().product.update({
       where: { id: params.id },
-      data: {
-        name,
-        description,
-        price: parseFloat(price),
-        category,
-        isActive,
-      },
+      data: updateData,
       include: {
         images: {
           orderBy: { order: "asc" },
         },
       },
     });
+
+    if (session.user.id) {
+      await getPrisma().auditLog.create({
+        data: {
+          adminId: session.user.id,
+          action: "PRODUCT_UPDATED",
+          entityId: params.id,
+          newValue: JSON.stringify({ name, price, category, isActive }),
+          ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown",
+          userAgent: request.headers.get("user-agent")?.slice(0, 500) || "unknown",
+        },
+      }).catch(() => {});
+    }
 
     return NextResponse.json(product);
   } catch (error) {
@@ -101,11 +122,45 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    await getPrisma().product.delete({
-      where: { id: params.id },
+    // Check if product has associated orders — if so, soft-delete (deactivate)
+    // to preserve order history integrity
+    const orderItemCount = await getPrisma().orderItem.count({
+      where: { productId: params.id },
     });
 
-    return NextResponse.json({ success: true });
+    if (orderItemCount > 0) {
+      // Soft delete: deactivate the product instead of hard-deleting
+      await getPrisma().product.update({
+        where: { id: params.id },
+        data: { isActive: false },
+      });
+    } else {
+      // No orders reference this product — safe to hard-delete
+      await getPrisma().product.delete({
+        where: { id: params.id },
+      });
+    }
+
+    // Audit log
+    if (session.user.id) {
+      await getPrisma().auditLog.create({
+        data: {
+          adminId: session.user.id,
+          action: orderItemCount > 0 ? "PRODUCT_DEACTIVATED" : "PRODUCT_DELETED",
+          entityId: params.id,
+          ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown",
+          userAgent: request.headers.get("user-agent")?.slice(0, 500) || "unknown",
+        },
+      }).catch(() => {});
+    }
+
+    return NextResponse.json({ 
+      success: true,
+      softDeleted: orderItemCount > 0,
+      message: orderItemCount > 0 
+        ? "Product deactivated (has existing orders)" 
+        : "Product deleted"
+    });
   } catch (error) {
     console.error("[ADMIN] Product delete error:", error);
     return NextResponse.json({ error: "Failed to delete product" }, { status: 500 });
