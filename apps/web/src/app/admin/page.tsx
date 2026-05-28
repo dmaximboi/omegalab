@@ -42,12 +42,25 @@ const ADMIN_TABS = [
  * 2. admin/layout.tsx - server-side session check
  * This component only renders if user is verified admin
  */
+interface DashboardStats {
+  totalOrders: number;
+  pendingOrders: number;
+  totalRevenue: number;
+  paidOrders: number;
+  failedOrders: number;
+}
+
 export default function AdminDashboard() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [navigating, setNavigating] = useState<string | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [productCount, setProductCount] = useState<number | null>(null);
+  const [userCount, setUserCount] = useState<number | null>(null);
+  const [messageCount, setMessageCount] = useState<number | null>(null);
 
   const handleTabClick = (e: React.MouseEvent, tabId: string, href: string) => {
     if (navigating) {
@@ -62,6 +75,53 @@ export default function AdminDashboard() {
   useEffect(() => {
     setNavigating(null);
   }, [pathname]);
+
+  // Fetch dashboard stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [analyticsRes, productsRes, usersRes, messagesRes] = await Promise.allSettled([
+          fetch("/api/admin/analytics"),
+          fetch("/api/admin/products"),
+          fetch("/api/admin/users"),
+          fetch("/api/admin/messages"),
+        ]);
+
+        if (analyticsRes.status === "fulfilled" && analyticsRes.value.ok) {
+          const data = await analyticsRes.value.json();
+          setStats({
+            totalOrders: data.totalOrders || 0,
+            pendingOrders: data.pendingOrders || 0,
+            totalRevenue: Number(data.totalRevenue) || 0,
+            paidOrders: data.paidOrders || 0,
+            failedOrders: data.failedOrders || 0,
+          });
+        }
+
+        if (productsRes.status === "fulfilled" && productsRes.value.ok) {
+          const data = await productsRes.value.json();
+          setProductCount(Array.isArray(data) ? data.length : data.products?.length || 0);
+        }
+
+        if (usersRes.status === "fulfilled" && usersRes.value.ok) {
+          const data = await usersRes.value.json();
+          setUserCount(Array.isArray(data) ? data.length : data.users?.length || 0);
+        }
+
+        if (messagesRes.status === "fulfilled" && messagesRes.value.ok) {
+          const data = await messagesRes.value.json();
+          const msgs = Array.isArray(data) ? data : data.messages || [];
+          setMessageCount(msgs.filter((m: any) => !m.isRead).length);
+        }
+      } catch (err) {
+        console.error("[ADMIN] Failed to fetch stats:", err);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   // Session is guaranteed by layout.tsx, but add safety check
   if (!session?.user) {
@@ -213,42 +273,42 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             <StatCard 
               label="Total Orders" 
-              value="--" 
+              value={statsLoading ? "..." : (stats?.totalOrders ?? 0)} 
               icon={ShoppingCart} 
               color="bg-sky" 
-              subtitle="Fetched from database"
+              subtitle={`${stats?.paidOrders ?? 0} paid`}
             />
             <StatCard 
               label="Pending Orders" 
-              value="--" 
+              value={statsLoading ? "..." : (stats?.pendingOrders ?? 0)} 
               icon={Loader2} 
               color="bg-amber-500"
               subtitle="Awaiting processing"
             />
             <StatCard 
               label="Total Revenue" 
-              value={formatCurrency(0)} 
+              value={statsLoading ? "..." : formatCurrency(stats?.totalRevenue ?? 0)} 
               icon={TrendingUp} 
               color="bg-green-500"
               subtitle="All time"
             />
             <StatCard 
               label="Products" 
-              value="--" 
+              value={statsLoading ? "..." : (productCount ?? 0)} 
               icon={Package} 
               color="bg-purple-500"
               subtitle="Active products"
             />
             <StatCard 
               label="Users" 
-              value="--" 
+              value={statsLoading ? "..." : (userCount ?? 0)} 
               icon={Users} 
               color="bg-indigo-500"
               subtitle="Registered users"
             />
             <StatCard 
               label="Unread Messages" 
-              value="--" 
+              value={statsLoading ? "..." : (messageCount ?? 0)} 
               icon={MessageSquare} 
               color="bg-red-500"
               subtitle="Contact form"

@@ -31,20 +31,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Code required" }, { status: 400 });
     }
 
-    // Validate code format — HMAC hashes are hex, max 128 chars
-    if (code.length > 128 || !/^[a-f0-9]+$/i.test(code)) {
-      await logVerifyAttempt(ipAddress, code.slice(0, 20), false, "invalid_format");
+    // Sanitize input
+    const trimmedCode = code.trim();
+    if (trimmedCode.length > 128 || trimmedCode.length < 3) {
+      await logVerifyAttempt(ipAddress, trimmedCode.slice(0, 20), false, "invalid_format");
       return NextResponse.json({ error: "Invalid code format" }, { status: 400 });
     }
 
-    // Rate limiting: max 10 verify attempts per IP per minute (simple in-memory)
-    // In production, use Redis or DB-based rate limiting
+    // Determine if it's a hex hash or a transaction reference (e.g. OMEGA-xxx)
+    const isHexHash = /^[a-f0-9]+$/i.test(trimmedCode) && trimmedCode.length >= 32;
 
-    // Find order by receipt hash (QR code contains this)
+    // Find order by receipt hash OR by transaction reference
     const order = await getPrisma().order.findFirst({
       where: {
-        receiptHash: code,
-        paymentVerified: true, // Only show verified (paid) orders
+        ...(isHexHash
+          ? { receiptHash: trimmedCode }
+          : { txRef: { equals: trimmedCode, mode: "insensitive" as const } }),
+        paymentVerified: true,
       },
       include: {
         items: {
@@ -63,12 +66,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Invalid or unverified receipt" }, { status: 404 });
     }
 
-    // Verify receipt integrity using HMAC re-derivation with stored salt
-    // This ensures the hash wasn't stolen from DB and applied to tampered data
-    if (order.receiptSalt) {
-      const isHashValid = verifyReceiptHash(order.txRef, order.txRef, order.receiptSalt, code);
+    // Verify receipt integrity using HMAC re-derivation with stored salt (only for hash lookups)
+    if (isHexHash && order.receiptSalt) {
+      const isHashValid = verifyReceiptHash(order.txRef, order.txRef, order.receiptSalt, trimmedCode);
       if (!isHashValid) {
-        await logVerifyAttempt(ipAddress, code.slice(0, 20), false, "hash_mismatch");
+        await logVerifyAttempt(ipAddress, trimmedCode.slice(0, 20), false, "hash_mismatch");
         return NextResponse.json({ error: "Invalid receipt" }, { status: 404 });
       }
     }

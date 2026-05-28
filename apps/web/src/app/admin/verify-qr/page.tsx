@@ -70,7 +70,7 @@ export default function AdminVerifyQRPage() {
             type="text"
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="Enter receipt hash code..."
+            placeholder="Enter receipt hash or transaction ref (OMEGA-...)..."
             className="flex-1 px-4 py-3 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-sky/50"
           />
           <button

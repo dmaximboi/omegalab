@@ -48,3 +48,33 @@ export async function PATCH(
     return NextResponse.json({ error: "Failed to update notification" }, { status: 500 });
   }
 }
+
+// DELETE: Delete a notification
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const notification = await getPrisma().notification.findUnique({
+      where: { id: params.id },
+    });
+
+    if (!notification || notification.userId !== session.user.id) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    await getPrisma().notification.delete({
+      where: { id: params.id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("[NOTIFICATIONS] Delete error:", error);
+    return NextResponse.json({ error: "Failed to delete notification" }, { status: 500 });
+  }
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Bell, Check, Package, MessageSquare, Info } from "lucide-react";
+import { Bell, Check, Package, MessageSquare, Info, Trash2, CheckCircle, XCircle, Receipt } from "lucide-react";
 
 interface Notification {
   id: string;
@@ -74,8 +74,28 @@ export default function NotificationBell() {
     setLoading(false);
   };
 
+  const deleteNotification = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const res = await fetch(`/api/notifications/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+        const notif = notifications.find((n) => n.id === id);
+        if (notif && !notif.isRead) {
+          setUnreadCount((prev) => Math.max(0, prev - 1));
+        }
+      }
+    } catch (error) {
+      console.error("Failed to delete notification:", error);
+    }
+  };
+
   const getIcon = (type: string) => {
     switch (type) {
+      case "order_success":
+        return <CheckCircle size={16} className="text-green-500 shrink-0" />;
+      case "order_failed":
+        return <XCircle size={16} className="text-red-500 shrink-0" />;
       case "ORDER_UPDATE":
         return <Package size={16} className="text-blue-500 shrink-0" />;
       case "MESSAGE":
@@ -176,9 +196,13 @@ export default function NotificationBell() {
                         }`}>
                           {notification.title}
                         </p>
-                        {!notification.isRead && (
-                          <span className="w-2 h-2 rounded-full bg-sky shrink-0 mt-1.5" />
-                        )}
+                        <button
+                          onClick={(e) => deleteNotification(notification.id, e)}
+                          className="text-gray-400 hover:text-red-500 transition-colors shrink-0 p-0.5"
+                          title="Delete"
+                        >
+                          <Trash2 size={13} />
+                        </button>
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
                         {notification.body}

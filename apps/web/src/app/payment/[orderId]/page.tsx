@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Script from "next/script";
 import { Loader2, AlertCircle, CheckCircle } from "lucide-react";
@@ -24,6 +24,7 @@ export default function PaymentProcessingPage() {
   const [flwLoaded, setFlwLoaded] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "processing" | "success" | "failed">("pending");
   const [paymentToken, setPaymentToken] = useState<string>("");
+  const paymentCompleteRef = useRef(false);
 
   useEffect(() => {
     // Store order ID in localStorage for persistence
@@ -117,19 +118,16 @@ export default function PaymentProcessingPage() {
           });
 
           if (verifyRes.ok) {
+            paymentCompleteRef.current = true;
             setPaymentStatus("success");
             localStorage.removeItem("pending_payment_order");
             localStorage.removeItem(`payment_token_${orderId}`);
-            setTimeout(() => {
-              router.push(`/order/success?id=${orderId}`);
-            }, 1500);
+            router.push(`/order/success?id=${orderId}`);
           } else {
+            paymentCompleteRef.current = true;
             setPaymentStatus("failed");
             localStorage.removeItem(`payment_token_${orderId}`);
-            // Redirect to failed receipt page with transaction reference
-            setTimeout(() => {
-              router.push(`/order/failed?id=${orderId}&tx=${response.transaction_id || ""}`);
-            }, 1500);
+            router.push(`/order/failed?id=${orderId}&tx=${response.transaction_id || ""}`);
           }
         } catch {
           setPaymentStatus("failed");
@@ -137,8 +135,9 @@ export default function PaymentProcessingPage() {
         }
       },
       onclose: () => {
-        if (paymentStatus !== "success") {
-          // User closed without completing - redirect back to cart
+        // Only redirect to order page if payment was NOT completed
+        // Use ref because React state is stale in this closure
+        if (!paymentCompleteRef.current) {
           router.push("/order");
         }
       },
