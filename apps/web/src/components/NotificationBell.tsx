@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Bell, Check, Package, MessageSquare, Info, Trash2, CheckCircle, XCircle, Receipt } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Bell, Check, Package, MessageSquare, Info, Trash2, CheckCircle, XCircle, Printer, ExternalLink } from "lucide-react";
 
 interface Notification {
   id: string;
@@ -12,7 +13,19 @@ interface Notification {
   createdAt: string;
 }
 
+// Extract orderId from notification body tag [orderId:xxx]
+function extractOrderId(body: string): string | null {
+  const match = body.match(/\[orderId:([^\]]+)\]/);
+  return match ? match[1] : null;
+}
+
+// Strip the [orderId:xxx] tag from display text
+function cleanBody(body: string): string {
+  return body.replace(/\s*\[orderId:[^\]]+\]/, "");
+}
+
 export default function NotificationBell() {
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -205,8 +218,44 @@ export default function NotificationBell() {
                         </button>
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
-                        {notification.body}
+                        {cleanBody(notification.body)}
                       </p>
+                      {/* Action buttons for order notifications */}
+                      {(notification.type === "order_success" || notification.type === "order_failed") && extractOrderId(notification.body) && (
+                        <div className="flex gap-2 mt-1.5">
+                          {notification.type === "order_success" ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const oid = extractOrderId(notification.body);
+                                if (oid) {
+                                  setIsOpen(false);
+                                  router.push(`/order/success?id=${oid}`);
+                                }
+                              }}
+                              className="flex items-center gap-1 text-[11px] text-green-600 hover:text-green-800 font-medium"
+                            >
+                              <Printer size={11} />
+                              View Receipt
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const oid = extractOrderId(notification.body);
+                                if (oid) {
+                                  setIsOpen(false);
+                                  router.push(`/order/failed?id=${oid}`);
+                                }
+                              }}
+                              className="flex items-center gap-1 text-[11px] text-red-600 hover:text-red-800 font-medium"
+                            >
+                              <ExternalLink size={11} />
+                              View Details
+                            </button>
+                          )}
+                        </div>
+                      )}
                       <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
                         {formatTime(notification.createdAt)}
                       </p>

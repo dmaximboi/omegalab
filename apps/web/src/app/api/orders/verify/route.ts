@@ -146,7 +146,7 @@ export async function POST(request: Request) {
       await createNotification(order.userId, {
         type: "order_success",
         title: "Payment Successful! ✓",
-        body: `Your order #${order.txRef} has been confirmed. Total: ₦${flwAmount.toNumber().toLocaleString()}. Your receipt is ready.`,
+        body: `Your order #${order.txRef} has been confirmed. Total: ₦${flwAmount.toNumber().toLocaleString()}. Your receipt is ready. [orderId:${orderId}]`,
       });
 
       return NextResponse.json({ message: "Payment verified successfully" });
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
       await createNotification(order.userId, {
         type: "order_failed",
         title: "Payment Failed",
-        body: `Your payment for order #${order.txRef} could not be verified. Reference: ${transaction_id}. Please contact support if you were charged.`,
+        body: `Your payment for order #${order.txRef} could not be verified. Reference: ${transaction_id}. Please contact support if you were charged. [orderId:${orderId}]`,
       });
 
       return NextResponse.json({ error: "Payment could not be verified", txRef: order.txRef }, { status: 400 });

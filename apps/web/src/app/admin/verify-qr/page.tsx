@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { QrCode, Search, CheckCircle, XCircle, Loader2, Shield, AlertTriangle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { QrCode, Search, CheckCircle, XCircle, Loader2, Shield, AlertTriangle, Camera, CameraOff } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -24,17 +24,21 @@ export default function AdminVerifyQRPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [error, setError] = useState("");
+  const [scannerActive, setScannerActive] = useState(false);
+  const [scannerError, setScannerError] = useState("");
+  const scannerRef = useRef<any>(null);
+  const scannerContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleVerify = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!code.trim()) return;
+  // Verify a code (hash or txRef)
+  const verifyCode = async (codeToVerify: string) => {
+    if (!codeToVerify.trim()) return;
 
     setLoading(true);
     setError("");
     setResult(null);
 
     try {
-      const res = await fetch(`/api/verify-qr?code=${encodeURIComponent(code.trim())}`);
+      const res = await fetch(`/api/verify-qr?code=${encodeURIComponent(codeToVerify.trim())}`);
       const data = await res.json();
 
       if (res.ok) {
@@ -49,6 +53,90 @@ export default function AdminVerifyQRPage() {
     }
   };
 
+  const handleVerify = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    await verifyCode(code);
+  };
+
+  // Extract the code param from a verify-qr URL
+  const extractCodeFromUrl = (text: string): string => {
+    try {
+      const url = new URL(text);
+      const codeParam = url.searchParams.get("code");
+      if (codeParam) return codeParam;
+    } catch {
+      // Not a URL — use as-is
+    }
+    return text;
+  };
+
+  // Start QR scanner
+  const startScanner = async () => {
+    setScannerError("");
+    setScannerActive(true);
+
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+
+      // Small delay to let the container render
+      await new Promise((r) => setTimeout(r, 100));
+
+      if (!scannerContainerRef.current) return;
+
+      const scanner = new Html5Qrcode("qr-scanner-region");
+      scannerRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1,
+        },
+        (decodedText: string) => {
+          // QR code scanned — extract the code and verify
+          const extractedCode = extractCodeFromUrl(decodedText);
+          setCode(extractedCode);
+          stopScanner();
+          verifyCode(extractedCode);
+        },
+        () => {
+          // QR scan error (no match found in frame) — ignore
+        }
+      );
+    } catch (err: any) {
+      console.error("[QR SCANNER] Error:", err);
+      setScannerError(
+        err?.message?.includes("NotAllowedError") || err?.message?.includes("Permission")
+          ? "Camera access denied. Please allow camera permissions."
+          : "Could not start camera. Make sure no other app is using it."
+      );
+      setScannerActive(false);
+    }
+  };
+
+  // Stop QR scanner
+  const stopScanner = async () => {
+    try {
+      if (scannerRef.current) {
+        await scannerRef.current.stop();
+        scannerRef.current = null;
+      }
+    } catch {
+      // Already stopped
+    }
+    setScannerActive(false);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(() => {});
+      }
+    };
+  }, []);
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="bg-white rounded-xl border p-6">
@@ -59,12 +147,55 @@ export default function AdminVerifyQRPage() {
           <div>
             <h2 className="font-bold text-navy text-lg">Receipt Verification</h2>
             <p className="text-sm text-navy/50">
-              Enter or scan a receipt QR code to verify authenticity
+              Scan QR code or enter transaction reference to verify
             </p>
           </div>
         </div>
 
-        {/* Input */}
+        {/* QR Camera Scanner */}
+        <div className="mb-6">
+          {!scannerActive ? (
+            <button
+              onClick={startScanner}
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-navy text-white rounded-xl hover:bg-navy/90 transition text-sm font-medium"
+            >
+              <Camera size={20} />
+              Open Camera Scanner
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <div
+                ref={scannerContainerRef}
+                className="rounded-xl overflow-hidden border-2 border-sky"
+              >
+                <div id="qr-scanner-region" className="w-full" />
+              </div>
+              <button
+                onClick={stopScanner}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-sm font-medium"
+              >
+                <CameraOff size={16} />
+                Close Camera
+              </button>
+            </div>
+          )}
+
+          {scannerError && (
+            <div className="mt-3 p-3 bg-red-50 text-red-700 rounded-lg text-sm flex items-start gap-2">
+              <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+              {scannerError}
+            </div>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex-1 border-t border-gray-200" />
+          <span className="text-xs text-gray-400 font-medium">OR ENTER MANUALLY</span>
+          <div className="flex-1 border-t border-gray-200" />
+        </div>
+
+        {/* Manual Input */}
         <form onSubmit={handleVerify} className="flex gap-3 mb-6">
           <input
             type="text"
