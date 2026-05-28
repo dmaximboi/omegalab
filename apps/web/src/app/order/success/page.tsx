@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Receipt } from "@/components/Receipt";
 import { CheckCircle, ShoppingBag, Home, Loader2 } from "lucide-react";
+import { cart } from "@/lib/cart";
 
 interface OrderReceipt {
   orderNumber: string;
@@ -24,6 +25,10 @@ function OrderSuccessContent() {
   const [showReceipt, setShowReceipt] = useState(false);
 
   useEffect(() => {
+    // Clear the cart on successful order
+    cart.clear();
+    window.dispatchEvent(new Event("storage"));
+    
     if (!orderId) return;
 
     const fetchReceipt = async () => {
@@ -74,11 +79,21 @@ function OrderSuccessContent() {
               </p>
 
               {orderId && (
-                <div className="bg-light-grey dark:bg-gray-700 rounded-lg p-4 mb-6">
-                  <p className="text-sm text-navy/60 dark:text-gray-400 mb-1">Order Reference</p>
-                  <p className="font-mono font-semibold text-navy dark:text-white">
-                    #{orderId.slice(-8).toUpperCase()}
-                  </p>
+                <div className="bg-light-grey dark:bg-gray-700 rounded-lg p-4 mb-6 space-y-2">
+                  <div>
+                    <p className="text-xs text-navy/50 dark:text-gray-500">Order ID</p>
+                    <p className="font-mono font-semibold text-navy dark:text-white text-sm">
+                      #{orderId.slice(-8).toUpperCase()}
+                    </p>
+                  </div>
+                  {receipt && (
+                    <div>
+                      <p className="text-xs text-navy/50 dark:text-gray-500">Verification Hash</p>
+                      <p className="font-mono text-xs text-navy/70 dark:text-gray-400 break-all">
+                        {receipt.receiptHash.slice(0, 16)}...
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 

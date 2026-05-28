@@ -119,12 +119,17 @@ export default function PaymentProcessingPage() {
           if (verifyRes.ok) {
             setPaymentStatus("success");
             localStorage.removeItem("pending_payment_order");
+            localStorage.removeItem(`payment_token_${orderId}`);
             setTimeout(() => {
               router.push(`/order/success?id=${orderId}`);
             }, 1500);
           } else {
             setPaymentStatus("failed");
-            setError("Payment verification failed. Please contact support.");
+            localStorage.removeItem(`payment_token_${orderId}`);
+            // Redirect to failed receipt page with transaction reference
+            setTimeout(() => {
+              router.push(`/order/failed?id=${orderId}&tx=${response.transaction_id || ""}`);
+            }, 1500);
           }
         } catch {
           setPaymentStatus("failed");

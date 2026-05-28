@@ -141,6 +141,14 @@ export async function POST(request: Request) {
       });
 
       console.log("[PAYMENT] Step 4 PAID:", orderId);
+
+      // Create success notification for the user
+      await createNotification(order.userId, {
+        type: "order_success",
+        title: "Payment Successful! ✓",
+        body: `Your order #${order.txRef} has been confirmed. Total: ₦${flwAmount.toNumber().toLocaleString()}. Your receipt is ready.`,
+      });
+
       return NextResponse.json({ message: "Payment verified successfully" });
     } else {
       // STEP 5: FAILED
@@ -158,11 +166,35 @@ export async function POST(request: Request) {
       });
 
       console.error("[PAYMENT] Step 5 FAILED:", orderId, failReason);
-      return NextResponse.json({ error: "Payment could not be verified" }, { status: 400 });
+
+      // Create failure notification for the user
+      await createNotification(order.userId, {
+        type: "order_failed",
+        title: "Payment Failed",
+        body: `Your payment for order #${order.txRef} could not be verified. Reference: ${transaction_id}. Please contact support if you were charged.`,
+      });
+
+      return NextResponse.json({ error: "Payment could not be verified", txRef: order.txRef }, { status: 400 });
     }
   } catch (error) {
     console.error("[PAYMENT] Verify error:", error);
     return NextResponse.json({ error: "Something went wrong. Please contact support." }, { status: 500 });
+  }
+}
+
+// Helper to create user notifications without failing the main flow
+async function createNotification(userId: string, data: { type: string; title: string; body: string }) {
+  try {
+    await getPrisma().notification.create({
+      data: {
+        userId,
+        type: data.type,
+        title: data.title,
+        body: data.body,
+      },
+    });
+  } catch (err) {
+    console.error("[NOTIFICATION] Failed to create:", err);
   }
 }
 
