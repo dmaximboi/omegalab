@@ -80,7 +80,7 @@ export async function middleware(request: NextRequest) {
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   
   // Disable dangerous browser features
-  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   
   // HTTPS enforcement (HSTS) - only in production
   if (process.env.NODE_ENV === "production") {

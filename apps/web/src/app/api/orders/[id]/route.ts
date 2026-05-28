@@ -28,10 +28,7 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const paymentToken = request.headers.get("x-payment-token");
 
     const order = await getPrisma().order.findUnique({
       where: { id: params.id },
@@ -57,9 +54,20 @@ export async function GET(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Only allow user to see their own orders (unless admin)
-    if (order.userId !== session.user.id && !session.user.isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Allow access if valid paymentToken is provided (for checkout flow)
+    const hasValidPaymentToken = paymentToken && 
+      order.paymentToken === paymentToken && 
+      order.tokenExpiresAt && 
+      new Date() < new Date(order.tokenExpiresAt);
+
+    // Otherwise require session-based ownership or admin
+    if (!hasValidPaymentToken) {
+      if (!session?.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      if (order.userId !== session.user.id && !session.user.isAdmin) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     // Only expose fields needed by the frontend — never leak paymentToken or receiptSalt

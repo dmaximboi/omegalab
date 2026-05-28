@@ -206,24 +206,31 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, account, profile, trigger }) {
-      // On sign in or token refresh, check database for admin role
-      if (account || trigger === "signIn" || trigger === "update") {
-        const email = token.email?.toLowerCase();
-        
-        if (email) {
-          try {
-            // Fetch role from database - this is the source of truth
-            const dbUser = await getPrisma().user.findUnique({
-              where: { email },
-              select: { role: true, id: true },
-            });
-            
-            // Admin ONLY if database says so
-            token.isAdmin = dbUser?.role === "ADMIN";
-            token.userId = dbUser?.id;
-            
+      const email = token.email?.toLowerCase();
+      const now = Math.floor(Date.now() / 1000);
+      const lastChecked = (token.roleCheckedAt as number) || 0;
+      const ROLE_CHECK_INTERVAL = 5 * 60; // Re-check role every 5 minutes
+
+      // Check admin role on sign-in, explicit update, OR periodically
+      const shouldCheckRole = account || trigger === "signIn" || trigger === "update" || 
+        (now - lastChecked > ROLE_CHECK_INTERVAL);
+
+      if (shouldCheckRole && email) {
+        try {
+          // Fetch role from database - this is the source of truth
+          const dbUser = await getPrisma().user.findUnique({
+            where: { email },
+            select: { role: true, id: true },
+          });
+          
+          // Admin ONLY if database says so
+          token.isAdmin = dbUser?.role === "ADMIN";
+          token.userId = dbUser?.id;
+          token.roleCheckedAt = now;
+          
+          if (account || trigger === "signIn") {
             // Add issued timestamp for token age verification
-            token.iat = Math.floor(Date.now() / 1000);
+            token.iat = now;
             
             // Add random jti (JWT ID) for token uniqueness
             token.jti = crypto.randomBytes(16).toString("hex");
@@ -243,18 +250,23 @@ export const authOptions: NextAuthOptions = {
                 },
               }).catch(() => {});
             }
-          } catch (error) {
-            console.error("[AUTH] Failed to check admin status:", error);
+          }
+        } catch (error) {
+          console.error("[AUTH] Failed to check admin status:", error);
+          // Only reset isAdmin if we've never successfully checked
+          if (token.roleCheckedAt === undefined) {
             token.isAdmin = false;
           }
         }
-        
+      }
+
+      if (account || trigger === "signIn") {
         token.emailVerified = (profile as { email_verified?: boolean })?.email_verified;
       }
       
       // Verify token hasn't been tampered with
       if (!token.iat) {
-        token.iat = Math.floor(Date.now() / 1000);
+        token.iat = now;
       }
       
       return token;

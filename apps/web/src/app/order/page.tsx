@@ -96,6 +96,9 @@ export default function OrderPage() {
 
       const data = await res.json();
 
+      // Save payment token for the payment page to use
+      localStorage.setItem(`payment_token_${data.orderId}`, data.paymentToken);
+
       // Redirect to dedicated payment processing page
       router.push(`/payment/${data.orderId}`);
     } catch (err: any) {

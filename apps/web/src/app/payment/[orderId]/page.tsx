@@ -35,7 +35,13 @@ export default function PaymentProcessingPage() {
 
   const fetchOrder = async () => {
     try {
-      const res = await fetch(`/api/orders/${orderId}`);
+      // Include payment token for authorization (guest checkout flow)
+      const paymentToken = localStorage.getItem(`payment_token_${orderId}`) || "";
+      const headers: Record<string, string> = {};
+      if (paymentToken) {
+        headers["x-payment-token"] = paymentToken;
+      }
+      const res = await fetch(`/api/orders/${orderId}`, { headers });
       if (res.ok) {
         const data = await res.json();
         setOrder(data);
