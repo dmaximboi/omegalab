@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { PrismaClient, OrderStatus } from "@prisma/client";
 import Decimal from "decimal.js";
 import { verifyFlutterwavePayment } from "@/lib/flutterwave";
@@ -47,12 +45,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Verify caller is authenticated
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // Find the order — use the DB's own txRef, not the one from frontend
     const order = await getPrisma().order.findUnique({
       where: { id: orderId },
@@ -64,13 +56,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Payment verification failed" }, { status: 400 });
     }
 
-    // Verify caller owns this order
-    if (order.userId !== session.user.id && !session.user.isAdmin) {
-      await logPayment({ orderId, txRef: order.txRef, flwRef: String(transaction_id), status: "step:FAILED:unauthorized_user", ipAddress });
-      return NextResponse.json({ error: "Payment verification failed" }, { status: 403 });
-    }
-
     // Payment token is REQUIRED and must match (timing-safe comparison)
+    // This serves as the primary authorization for the verify endpoint
     if (!order.paymentToken || !timingSafeEqual(paymentToken, order.paymentToken)) {
       await logPayment({ orderId, txRef: order.txRef, flwRef: String(transaction_id), status: "step:FAILED:invalid_token", ipAddress });
       return NextResponse.json({ error: "Invalid payment token" }, { status: 403 });

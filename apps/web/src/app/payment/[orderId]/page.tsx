@@ -23,11 +23,15 @@ export default function PaymentProcessingPage() {
   const [error, setError] = useState("");
   const [flwLoaded, setFlwLoaded] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "processing" | "success" | "failed">("pending");
+  const [paymentToken, setPaymentToken] = useState<string>("");
 
   useEffect(() => {
     // Store order ID in localStorage for persistence
     if (orderId) {
       localStorage.setItem("pending_payment_order", orderId);
+      // Retrieve payment token saved during order creation
+      const storedToken = localStorage.getItem(`payment_token_${orderId}`) || "";
+      setPaymentToken(storedToken);
     }
     
     fetchOrder();
@@ -100,13 +104,15 @@ export default function PaymentProcessingPage() {
       },
       callback: async (response: any) => {
         try {
+          // Use paymentToken from localStorage (not from orderData, which doesn't include it)
+          const storedToken = localStorage.getItem(`payment_token_${orderId}`) || paymentToken;
           const verifyRes = await fetch("/api/orders/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               transaction_id: response.transaction_id,
               orderId: orderId,
-              paymentToken: orderData.paymentToken,
+              paymentToken: storedToken,
             }),
           });
 
