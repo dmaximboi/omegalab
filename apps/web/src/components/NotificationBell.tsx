@@ -68,6 +68,8 @@ export default function NotificationBell() {
 
   const markAsRead = async (id: string) => {
     try {
+      // Synthetic notifications are already "read" — skip API call
+      if (id.startsWith("order_")) return;
       const res = await fetch(`/api/notifications/${id}`, { method: "PATCH" });
       if (res.ok) {
         setNotifications((prev) =>
@@ -90,6 +92,11 @@ export default function NotificationBell() {
   const deleteNotification = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
+      // Synthetic notifications (from orders) have "order_" prefix — just remove from UI
+      if (id.startsWith("order_")) {
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+        return;
+      }
       const res = await fetch(`/api/notifications/${id}`, { method: "DELETE" });
       if (res.ok) {
         setNotifications((prev) => prev.filter((n) => n.id !== id));
