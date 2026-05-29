@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PrismaClient, OrderStatus } from "@prisma/client";
 import Decimal from "decimal.js";
 import { verifyFlutterwavePayment } from "@/lib/flutterwave";
+import { cookies } from "next/headers";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -38,11 +39,19 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { transaction_id, orderId, paymentToken } = body;
-    // NOTE: we do NOT use tx_ref from frontend — we match from DB
-
-    if (!transaction_id || !orderId || !paymentToken) {
+    const { transaction_id, orderId } = body;
+    // Payment token is now in httpOnly cookie, not request body
+    
+    if (!transaction_id || !orderId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    // Get payment token from httpOnly cookie
+    const cookieStore = cookies();
+    const paymentToken = cookieStore.get("payment_token")?.value;
+    if (!paymentToken) {
+      await logPayment({ txRef: null, flwRef: String(transaction_id), status: "step:FAILED:missing_token", ipAddress });
+      return NextResponse.json({ error: "Payment token not found" }, { status: 401 });
     }
 
     // Find the order — use the DB's own txRef, not the one from frontend
@@ -149,7 +158,10 @@ export async function POST(request: Request) {
         body: `Your order #${order.txRef} has been confirmed. Total: ₦${flwAmount.toNumber().toLocaleString()}. Your receipt is ready. [orderId:${orderId}]`,
       });
 
-      return NextResponse.json({ message: "Payment verified successfully" });
+      // Clear payment token cookie
+      const response = NextResponse.json({ message: "Payment verified successfully" });
+      response.cookies.delete("payment_token");
+      return response;
     } else {
       // STEP 5: FAILED
       const failReason = !isSuccess ? "flw_not_success" : !txRefMatch ? "txref_mismatch" : !amountOk ? "amount_mismatch" : "currency_mismatch";
@@ -174,7 +186,10 @@ export async function POST(request: Request) {
         body: `Your payment for order #${order.txRef} could not be verified. Reference: ${transaction_id}. Please contact support if you were charged. [orderId:${orderId}]`,
       });
 
-      return NextResponse.json({ error: "Payment could not be verified", txRef: order.txRef }, { status: 400 });
+      // Clear payment token cookie on failure
+      const response = NextResponse.json({ error: "Payment could not be verified", txRef: order.txRef }, { status: 400 });
+      response.cookies.delete("payment_token");
+      return response;
     }
   } catch (error) {
     console.error("[PAYMENT] Verify error:", error);

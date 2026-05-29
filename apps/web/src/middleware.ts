@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 /**
  * ============================================
@@ -24,8 +25,7 @@ const PROTECTED_ROUTES = ["/admin"];
 // API routes that require authentication
 const PROTECTED_API_ROUTES = ["/api/admin"];
 
-// Rate limit tracking (in production, use Redis/Upstash)
-const rateLimitMap = new Map<string, { count: number; timestamp: number; blockedUntil?: number }>();
+// Suspicious IP tracking (in-memory, simple blocking)
 const suspiciousIps = new Set<string>();
 
 // Advanced security: IP reputation check
@@ -125,58 +125,25 @@ export async function middleware(request: NextRequest) {
   // RATE LIMITING FOR API ROUTES
   // ============================================
   if (pathname.startsWith("/api/")) {
-    const key = `${ip}:${pathname}`;
-    const now = Date.now();
-    const windowMs = 60000; // 1 minute
     const maxRequests = pathname.includes("/auth/") ? 5 : 20; // Stricter for auth
     const blockDuration = 15 * 60 * 1000; // 15 minutes block
+    const windowMs = 60000; // 1 minute
 
-    const record = rateLimitMap.get(key);
+    const rateCheck = await checkRateLimit(`${ip}:${pathname}`, maxRequests, windowMs, blockDuration);
     
-    // Check if IP is currently blocked
-    if (record?.blockedUntil && now < record.blockedUntil) {
+    if (!rateCheck.allowed) {
+      suspiciousIps.add(ip);
+      console.warn(`[SECURITY] Blocked IP for rate limit: ${ip}`);
       return new NextResponse(
         JSON.stringify({ error: "Too many requests. Please try again later." }),
         { 
           status: 429, 
           headers: { 
             "Content-Type": "application/json",
-            "Retry-After": String(Math.ceil((record.blockedUntil - now) / 1000)),
+            "Retry-After": rateCheck.resetAt ? String(Math.ceil((rateCheck.resetAt - Date.now()) / 1000)) : "900",
           } 
         }
       );
-    }
-    
-    if (record && now - record.timestamp < windowMs) {
-      if (record.count >= maxRequests) {
-        // Block the IP for excessive requests
-        record.blockedUntil = now + blockDuration;
-        suspiciousIps.add(ip);
-        console.warn(`[SECURITY] Blocked IP for rate limit: ${ip}`);
-        return new NextResponse(
-          JSON.stringify({ error: "Too many requests. Please try again later." }),
-          { 
-            status: 429, 
-            headers: { 
-              "Content-Type": "application/json",
-              "Retry-After": String(blockDuration / 1000),
-            } 
-          }
-        );
-      }
-      record.count++;
-    } else {
-      rateLimitMap.set(key, { count: 1, timestamp: now });
-    }
-
-    // Clean up old entries periodically
-    if (rateLimitMap.size > 10000) {
-      const cutoff = now - windowMs;
-      const keysToDelete: string[] = [];
-      rateLimitMap.forEach((v, k) => {
-        if (v.timestamp < cutoff) keysToDelete.push(k);
-      });
-      keysToDelete.forEach(k => rateLimitMap.delete(k));
     }
   }
 

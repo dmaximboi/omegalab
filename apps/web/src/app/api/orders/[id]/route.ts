@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,8 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    const paymentToken = request.headers.get("x-payment-token");
+    const cookieStore = cookies();
+    const paymentToken = cookieStore.get("payment_token")?.value;
 
     const order = await getPrisma().order.findUnique({
       where: { id: params.id },

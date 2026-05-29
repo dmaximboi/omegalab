@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { verifyReceiptHash } from "@/lib/flutterwave";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,15 @@ function getPrisma() {
 export async function GET(request: NextRequest) {
   const forwarded = request.headers.get("x-forwarded-for");
   const ipAddress = forwarded?.split(",")[0]?.trim() || "unknown";
+
+  // Check rate limit (uses Redis if configured, otherwise in-memory)
+  const rateCheck = await checkRateLimit(`verify-qr:${ipAddress}`, 10, 60000, 5 * 60 * 1000);
+  if (!rateCheck.allowed) {
+    return NextResponse.json(
+      { error: "Too many verification attempts. Please try again later." },
+      { status: 429 }
+    );
+  }
 
   try {
     const code = request.nextUrl.searchParams.get("code");

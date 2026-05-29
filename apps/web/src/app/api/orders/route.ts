@@ -185,14 +185,25 @@ export async function POST(request: Request) {
 
     console.log("[ORDER] Step 1 INITIATED:", order.id, "txRef:", txRef, "amount:", totalAsNumber);
 
-    return NextResponse.json({
+    // Set httpOnly cookie with payment token instead of returning in JSON
+    const response = NextResponse.json({
       orderId: order.id,
       txRef,
-      paymentToken: (order as any).paymentToken,
       amount: totalAsNumber,
       userEmail: sessionUser.email,
       userName: sessionUser.name,
     });
+    
+    // Set httpOnly cookie for payment token (XSS-safe)
+    response.cookies.set("payment_token", (order as any).paymentToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60, // 1 hour
+      path: "/",
+    });
+    
+    return response;
   } catch (error: any) {
     console.error("[ORDER] Create error:", error?.message || error);
     console.error("[ORDER] Stack:", error?.stack);

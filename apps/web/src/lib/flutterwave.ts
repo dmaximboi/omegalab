@@ -30,7 +30,8 @@ export function generateTxRef(): string {
 // HMAC-based receipt hash with per-order salt
 export function generateReceiptHash(orderId: string, txRef: string): { hash: string; salt: string } {
   const salt = crypto.randomBytes(16).toString("hex");
-  const secret = process.env.FLW_SECRET_KEY || process.env.NEXTAUTH_SECRET || "fallback-secret";
+  const secret = process.env.FLW_SECRET_KEY || process.env.NEXTAUTH_SECRET;
+  if (!secret) throw new Error("FLW_SECRET_KEY or NEXTAUTH_SECRET must be configured for receipt hashing");
   const hash = crypto
     .createHmac("sha256", secret)
     .update(`${orderId}:${txRef}:${salt}`)
@@ -40,7 +41,8 @@ export function generateReceiptHash(orderId: string, txRef: string): { hash: str
 
 // Verify a receipt hash
 export function verifyReceiptHash(orderId: string, txRef: string, salt: string, hash: string): boolean {
-  const secret = process.env.FLW_SECRET_KEY || process.env.NEXTAUTH_SECRET || "fallback-secret";
+  const secret = process.env.FLW_SECRET_KEY || process.env.NEXTAUTH_SECRET;
+  if (!secret) throw new Error("FLW_SECRET_KEY or NEXTAUTH_SECRET must be configured for receipt verification");
   const expected = crypto
     .createHmac("sha256", secret)
     .update(`${orderId}:${txRef}:${salt}`)

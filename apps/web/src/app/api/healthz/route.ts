@@ -14,7 +14,6 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefi
 function getPrisma() {
   if (!globalForPrisma.prisma) {
     const dbUrl = process.env.DATABASE_URL;
-    console.log("[HEALTH] DATABASE_URL set:", !!dbUrl, "length:", dbUrl?.length || 0);
     if (!dbUrl) {
       console.error("[HEALTH] CRITICAL: DATABASE_URL environment variable is not set!");
     }
@@ -47,9 +46,6 @@ export async function GET() {
   const startTime = Date.now();
   
   try {
-    const dbUrl = process.env.DATABASE_URL;
-    console.log("[HEALTH] DATABASE_URL set:", !!dbUrl, "length:", dbUrl?.length || 0);
-    
     // Simple database ping to keep connection alive
     await getPrisma().$queryRaw`SELECT 1`;
     

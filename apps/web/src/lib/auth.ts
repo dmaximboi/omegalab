@@ -2,6 +2,7 @@ import { NextAuthOptions, getServerSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaClient, Role } from "@prisma/client";
 import crypto from "crypto";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // Lazy Prisma client - only instantiated when first accessed
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
@@ -11,8 +12,6 @@ function getPrisma() {
     const dbUrl = process.env.DATABASE_URL;
     if (!dbUrl) {
       console.error("[AUTH] CRITICAL: DATABASE_URL environment variable is not set!");
-    } else {
-      console.log("[AUTH] DATABASE_URL is set (length:", dbUrl.length, ")");
     }
     globalForPrisma.prisma = new PrismaClient({
       log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
@@ -58,47 +57,18 @@ function getPrisma() {
  * - NO API endpoint exists to change roles
  */
 
-// Rate limiting for auth attempts (in-memory, use Redis in production)
-const authAttempts = new Map<string, { count: number; lastAttempt: number; lockedUntil?: number }>();
 const MAX_AUTH_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
 const ATTEMPT_WINDOW = 5 * 60 * 1000; // 5 minutes
 
-function checkRateLimit(identifier: string): { allowed: boolean; remainingAttempts: number } {
-  const now = Date.now();
-  const record = authAttempts.get(identifier);
-  
-  if (!record) {
-    authAttempts.set(identifier, { count: 1, lastAttempt: now });
-    return { allowed: true, remainingAttempts: MAX_AUTH_ATTEMPTS - 1 };
-  }
-  
-  // Check if locked out
-  if (record.lockedUntil && now < record.lockedUntil) {
-    return { allowed: false, remainingAttempts: 0 };
-  }
-  
-  // Reset if outside window
-  if (now - record.lastAttempt > ATTEMPT_WINDOW) {
-    authAttempts.set(identifier, { count: 1, lastAttempt: now });
-    return { allowed: true, remainingAttempts: MAX_AUTH_ATTEMPTS - 1 };
-  }
-  
-  // Increment count
-  record.count++;
-  record.lastAttempt = now;
-  
-  if (record.count > MAX_AUTH_ATTEMPTS) {
-    record.lockedUntil = now + LOCKOUT_DURATION;
-    console.warn(`[AUTH] Account locked: ${identifier} - too many attempts`);
-    return { allowed: false, remainingAttempts: 0 };
-  }
-  
-  return { allowed: true, remainingAttempts: MAX_AUTH_ATTEMPTS - record.count };
+// Rate limiting for auth attempts (uses Redis if configured, otherwise in-memory)
+async function checkAuthRateLimit(identifier: string): Promise<{ allowed: boolean; remainingAttempts: number }> {
+  return await checkRateLimit(`auth:${identifier}`, MAX_AUTH_ATTEMPTS, ATTEMPT_WINDOW, LOCKOUT_DURATION);
 }
 
-function clearRateLimit(identifier: string): void {
-  authAttempts.delete(identifier);
+function clearAuthRateLimit(identifier: string): void {
+  // In-memory fallback cleanup (Redis handles its own expiration)
+  // No-op for now since rate-limit utility handles cleanup
 }
 
 // Generate session fingerprint for additional security
@@ -132,7 +102,7 @@ export const authOptions: NextAuthOptions = {
       const email = user.email.toLowerCase();
       
       // Check rate limit
-      const rateCheck = checkRateLimit(email);
+      const rateCheck = await checkAuthRateLimit(email);
       if (!rateCheck.allowed) {
         console.warn(`[AUTH] Sign in blocked: ${email} - rate limited`);
         return false;
@@ -195,7 +165,7 @@ export const authOptions: NextAuthOptions = {
         }).catch(() => {}); // Don't fail login if audit fails
 
         // Clear rate limit on success
-        clearRateLimit(email);
+        clearAuthRateLimit(email);
         
       } catch (error) {
         console.error("[AUTH] Database error:", error);
@@ -209,7 +179,7 @@ export const authOptions: NextAuthOptions = {
       const email = token.email?.toLowerCase();
       const now = Math.floor(Date.now() / 1000);
       const lastChecked = (token.roleCheckedAt as number) || 0;
-      const ROLE_CHECK_INTERVAL = 5 * 60; // Re-check role every 5 minutes
+      const ROLE_CHECK_INTERVAL = 1 * 60; // Re-check role every 1 minute
 
       // Check admin role on sign-in, explicit update, OR periodically
       const shouldCheckRole = account || trigger === "signIn" || trigger === "update" || 

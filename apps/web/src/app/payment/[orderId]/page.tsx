@@ -30,9 +30,6 @@ export default function PaymentProcessingPage() {
     // Store order ID in localStorage for persistence
     if (orderId) {
       localStorage.setItem("pending_payment_order", orderId);
-      // Retrieve payment token saved during order creation
-      const storedToken = localStorage.getItem(`payment_token_${orderId}`) || "";
-      setPaymentToken(storedToken);
     }
     
     fetchOrder();
@@ -40,13 +37,8 @@ export default function PaymentProcessingPage() {
 
   const fetchOrder = async () => {
     try {
-      // Include payment token for authorization (guest checkout flow)
-      const paymentToken = localStorage.getItem(`payment_token_${orderId}`) || "";
-      const headers: Record<string, string> = {};
-      if (paymentToken) {
-        headers["x-payment-token"] = paymentToken;
-      }
-      const res = await fetch(`/api/orders/${orderId}`, { headers });
+      // Payment token is now in httpOnly cookie, sent automatically
+      const res = await fetch(`/api/orders/${orderId}`);
       if (res.ok) {
         const data = await res.json();
         setOrder(data);
@@ -105,15 +97,13 @@ export default function PaymentProcessingPage() {
       },
       callback: async (response: any) => {
         try {
-          // Use paymentToken from localStorage (not from orderData, which doesn't include it)
-          const storedToken = localStorage.getItem(`payment_token_${orderId}`) || paymentToken;
+          // Payment token is in httpOnly cookie, sent automatically
           const verifyRes = await fetch("/api/orders/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               transaction_id: response.transaction_id,
               orderId: orderId,
-              paymentToken: storedToken,
             }),
           });
 
@@ -121,12 +111,10 @@ export default function PaymentProcessingPage() {
             paymentCompleteRef.current = true;
             setPaymentStatus("success");
             localStorage.removeItem("pending_payment_order");
-            localStorage.removeItem(`payment_token_${orderId}`);
             router.push(`/order/success?id=${orderId}`);
           } else {
             paymentCompleteRef.current = true;
             setPaymentStatus("failed");
-            localStorage.removeItem(`payment_token_${orderId}`);
             router.push(`/order/failed?id=${orderId}&tx=${response.transaction_id || ""}`);
           }
         } catch {
