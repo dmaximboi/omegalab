@@ -23,7 +23,7 @@ const nextConfig = {
           // Content Security Policy
           { 
             key: "Content-Security-Policy", 
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://checkout.flutterwave.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://*.uploadthing.com https://*.neon.tech https://api.ravepay.co https://*.flutterwave.com https://*.myflutterwave.com https://checkout.flutterwave.com https://checkout-v3-ui-prod.f4b-flutterwave.com https://api-js.mixpanel.com; frame-src 'self' https://accounts.google.com https://checkout.flutterwave.com https://checkout-v3-ui-prod.f4b-flutterwave.com; frame-ancestors 'none';"
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://checkout.flutterwave.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://*.uploadthing.com https://*.neon.tech https://api.ravepay.co https://*.flutterwave.com https://*.myflutterwave.com https://checkout.flutterwave.com https://checkout-v3-ui-prod.f4b-flutterwave.com https://api-js.mixpanel.com; frame-src 'self' https://accounts.google.com https://checkout.flutterwave.com https://checkout-v3.flutterwave.com https://checkout-v3-ui-prod.f4b-flutterwave.com; frame-ancestors 'none';"
           },
         ],
       },
