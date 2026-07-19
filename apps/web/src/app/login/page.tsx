@@ -161,7 +161,7 @@ export default function LoginPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="bg-white rounded-2xl shadow-2xl overflow-hidden"
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden"
               >
                 {/* Header */}
                 <div className="bg-gradient-to-r from-navy to-navy/90 p-8 text-white text-center relative">
@@ -184,13 +184,13 @@ export default function LoginPage() {
                 {/* Content */}
                 <div className="p-6 space-y-6">
                   <div className="text-center">
-                    <p className="text-navy/60 text-sm">
+                    <p className="text-navy/60 dark:text-gray-400 text-sm">
                       Sign in with your Google account to access the catalogue, place orders, and track your purchases.
                     </p>
                   </div>
 
                   {error && (
-                    <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg text-center">
+                    <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm rounded-lg text-center">
                       {error}
                     </div>
                   )}
@@ -199,7 +199,7 @@ export default function LoginPage() {
                   <button
                     onClick={handleGoogleSignIn}
                     disabled={isLoading}
-                    className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white border-2 border-border rounded-xl font-medium text-navy hover:bg-light-grey hover:border-navy/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white dark:bg-gray-800 border-2 border-border dark:border-gray-700 rounded-xl font-medium text-navy dark:text-white hover:bg-light-grey dark:hover:bg-gray-700 hover:border-navy/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
@@ -226,13 +226,13 @@ export default function LoginPage() {
                     <span>{isLoading ? "Signing in..." : "Continue with Google"}</span>
                   </button>
 
-                  <p className="text-center text-xs text-navy/50">
+                  <p className="text-center text-xs text-navy/50 dark:text-gray-400">
                     By signing in, you agree to our{" "}
-                    <Link href="/terms" className="underline hover:text-navy">
+                    <Link href="/terms" className="underline hover:text-navy dark:hover:text-white">
                       Terms of Service
                     </Link>{" "}
                     and{" "}
-                    <Link href="/privacy" className="underline hover:text-navy">
+                    <Link href="/privacy" className="underline hover:text-navy dark:hover:text-white">
                       Privacy Policy
                     </Link>
                   </p>

@@ -198,7 +198,7 @@ export default function ProductDetailPage() {
                 />
               ) : (
                 <div className="flex items-center justify-center h-full">
-                  <Package className="text-gray-300" size={64} />
+                  <Package className="text-gray-300 dark:text-gray-600" size={64} />
                 </div>
               )}
 
@@ -207,15 +207,15 @@ export default function ProductDetailPage() {
                 <>
                   <button
                     onClick={prevImage}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 dark:bg-gray-800/80 hover:bg-white dark:hover:bg-gray-700 rounded-full shadow-lg transition"
                   >
-                    <ChevronLeft size={24} />
+                    <ChevronLeft size={24} className="dark:text-white" />
                   </button>
                   <button
                     onClick={nextImage}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 dark:bg-gray-800/80 hover:bg-white dark:hover:bg-gray-700 rounded-full shadow-lg transition"
                   >
-                    <ChevronRight size={24} />
+                    <ChevronRight size={24} className="dark:text-white" />
                   </button>
                 </>
               )}
@@ -238,7 +238,7 @@ export default function ProductDetailPage() {
                     className={`relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition ${
                       index === currentImageIndex
                         ? "border-blue-600"
-                        : "border-gray-200 hover:border-gray-300"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500"
                     }`}
                   >
                     <Image

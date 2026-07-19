@@ -28,7 +28,7 @@ export function BackButton({
   return (
     <button
       onClick={handleBack}
-      className={`inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition ${className}`}
+      className={`inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition ${className}`}
     >
       <ArrowLeft size={18} />
       {label}

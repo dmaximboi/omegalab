@@ -98,16 +98,16 @@ export function CookieConsent() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4">
-      <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl border border-border p-6">
+      <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-border dark:border-gray-700 p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
             <Shield className="text-sky" size={22} />
-            <h3 className="font-bold text-navy text-sm">Cookie Settings</h3>
+            <h3 className="font-bold text-navy dark:text-white text-sm">Cookie Settings</h3>
           </div>
           <button
             onClick={acceptEssentialOnly}
-            className="text-navy/40 hover:text-navy transition p-1"
+            className="text-navy/40 dark:text-gray-400 hover:text-navy dark:hover:text-white transition p-1"
             aria-label="Close"
           >
             <X size={16} />
@@ -115,7 +115,7 @@ export function CookieConsent() {
         </div>
 
         {/* Description */}
-        <p className="text-xs text-navy/60 leading-relaxed mb-4">
+        <p className="text-xs text-navy/60 dark:text-gray-400 leading-relaxed mb-4">
           We use cookies to improve your experience, analyze site usage, and assist in our
           marketing efforts. Essential cookies are required for the site to function. You can
           manage your preferences below. See our{" "}
@@ -127,12 +127,12 @@ export function CookieConsent() {
 
         {/* Cookie Details Toggle */}
         {showDetails && (
-          <div className="space-y-3 mb-4 border rounded-lg p-3 bg-gray-50">
+          <div className="space-y-3 mb-4 border dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-900">
             {/* Essential */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-navy">Essential Cookies</p>
-                <p className="text-[10px] text-navy/50">
+                <p className="text-xs font-semibold text-navy dark:text-white">Essential Cookies</p>
+                <p className="text-[10px] text-navy/50 dark:text-gray-400">
                   Required for cart, authentication, and security. Cannot be disabled.
                 </p>
               </div>
@@ -144,15 +144,15 @@ export function CookieConsent() {
             {/* Analytics */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-navy">Analytics Cookies</p>
-                <p className="text-[10px] text-navy/50">
+                <p className="text-xs font-semibold text-navy dark:text-white">Analytics Cookies</p>
+                <p className="text-[10px] text-navy/50 dark:text-gray-400">
                   Help us understand how visitors use the site (page views, bounce rate).
                 </p>
               </div>
               <button
                 onClick={() => setConsent((c) => ({ ...c, analytics: !c.analytics }))}
                 className={`w-10 h-5 rounded-full flex items-center px-0.5 transition ${
-                  consent.analytics ? "bg-sky justify-end" : "bg-gray-300 justify-start"
+                  consent.analytics ? "bg-sky justify-end" : "bg-gray-300 dark:bg-gray-700 justify-start"
                 }`}
               >
                 <div className="w-4 h-4 bg-white rounded-full" />
@@ -162,15 +162,15 @@ export function CookieConsent() {
             {/* Marketing */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-navy">Marketing Cookies</p>
-                <p className="text-[10px] text-navy/50">
+                <p className="text-xs font-semibold text-navy dark:text-white">Marketing Cookies</p>
+                <p className="text-[10px] text-navy/50 dark:text-gray-400">
                   Used to deliver relevant advertisements and track campaign effectiveness.
                 </p>
               </div>
               <button
                 onClick={() => setConsent((c) => ({ ...c, marketing: !c.marketing }))}
                 className={`w-10 h-5 rounded-full flex items-center px-0.5 transition ${
-                  consent.marketing ? "bg-sky justify-end" : "bg-gray-300 justify-start"
+                  consent.marketing ? "bg-sky justify-end" : "bg-gray-300 dark:bg-gray-700 justify-start"
                 }`}
               >
                 <div className="w-4 h-4 bg-white rounded-full" />
@@ -189,7 +189,7 @@ export function CookieConsent() {
           </button>
           <button
             onClick={acceptEssentialOnly}
-            className="px-4 py-2 bg-gray-100 text-navy text-xs font-medium rounded-lg hover:bg-gray-200 transition"
+            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-navy dark:text-white text-xs font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
           >
             Essential Only
           </button>
@@ -203,7 +203,7 @@ export function CookieConsent() {
           ) : (
             <button
               onClick={() => setShowDetails(true)}
-              className="px-4 py-2 text-navy/50 text-xs font-medium hover:text-navy transition"
+              className="px-4 py-2 text-navy/50 dark:text-gray-400 text-xs font-medium hover:text-navy dark:hover:text-white transition"
             >
               Customize
             </button>

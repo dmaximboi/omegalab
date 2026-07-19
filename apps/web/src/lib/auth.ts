@@ -223,10 +223,8 @@ export const authOptions: NextAuthOptions = {
           }
         } catch (error) {
           console.error("[AUTH] Failed to check admin status:", error);
-          // Only reset isAdmin if we've never successfully checked
-          if (token.roleCheckedAt === undefined) {
-            token.isAdmin = false;
-          }
+          // Fail closed: never retain admin privileges when role re-check fails
+          token.isAdmin = false;
         }
       }
 

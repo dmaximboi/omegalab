@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -21,17 +23,23 @@ function getPrisma() {
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const id = request.nextUrl.searchParams.get("id");
 
     if (!id || typeof id !== "string" || id.length > 100) {
       return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
     }
 
-    // Only return receipt for verified (paid) orders
+    // Only return receipt for verified (paid) orders owned by the user (or admin)
     const order = await getPrisma().order.findFirst({
       where: {
         id,
         paymentVerified: true,
+        ...(session.user.isAdmin ? {} : { userId: session.user.id }),
       },
       include: {
         items: {

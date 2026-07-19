@@ -74,20 +74,20 @@ export default function AdminMessagesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
+      <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <Link 
               href="/admin" 
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
             >
               <ArrowLeft size={20} />
             </Link>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Messages</h1>
-              <p className="text-sm text-gray-500">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Messages</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 {messages.filter(m => !m.isRead).length} unread messages
               </p>
             </div>
@@ -101,10 +101,10 @@ export default function AdminMessagesPage() {
             <Loader2 className="animate-spin text-blue-600" size={32} />
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg border">
-            <MessageSquare className="mx-auto text-gray-300 mb-4" size={48} />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No messages yet</h3>
-            <p className="text-gray-500">Messages from the contact form will appear here</p>
+          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700">
+            <MessageSquare className="mx-auto text-gray-300 dark:text-gray-600 mb-4" size={48} />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No messages yet</h3>
+            <p className="text-gray-500 dark:text-gray-400">Messages from the contact form will appear here</p>
           </div>
         ) : (
           <div className="grid lg:grid-cols-3 gap-6">
@@ -117,31 +117,31 @@ export default function AdminMessagesPage() {
                     setSelectedMessage(msg);
                     if (!msg.isRead) markAsRead(msg.id);
                   }}
-                  className={`w-full text-left p-4 rounded-lg border transition ${
+                  className={`w-full text-left p-4 rounded-lg border dark:border-gray-700 transition ${
                     selectedMessage?.id === msg.id 
-                      ? "bg-blue-50 border-blue-200" 
-                      : "bg-white hover:bg-gray-50"
+                      ? "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700" 
+                      : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
                   } ${!msg.isRead ? "border-l-4 border-l-blue-500" : ""}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
                       {msg.isRead ? (
-                        <MailOpen size={16} className="text-gray-400" />
+                        <MailOpen size={16} className="text-gray-400 dark:text-gray-500" />
                       ) : (
                         <Mail size={16} className="text-blue-500" />
                       )}
-                      <span className={`font-medium ${!msg.isRead ? "text-gray-900" : "text-gray-600"}`}>
+                      <span className={`font-medium ${!msg.isRead ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-300"}`}>
                         {msg.name}
                       </span>
                     </div>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-gray-400 dark:text-gray-500">
                       {formatDate(msg.createdAt).split(",")[0]}
                     </span>
                   </div>
-                  <p className={`text-sm mt-1 ${!msg.isRead ? "font-medium" : "text-gray-500"}`}>
+                  <p className={`text-sm mt-1 ${!msg.isRead ? "font-medium dark:text-white" : "text-gray-500 dark:text-gray-400"}`}>
                     {msg.subject}
                   </p>
-                  <p className="text-xs text-gray-400 mt-1 truncate">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate">
                     {msg.message}
                   </p>
                 </button>
@@ -151,11 +151,11 @@ export default function AdminMessagesPage() {
             {/* Message Detail */}
             <div className="lg:col-span-2">
               {selectedMessage ? (
-                <div className="bg-white rounded-lg border p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-6">
                   <div className="flex items-start justify-between mb-6">
                     <div>
-                      <h2 className="text-xl font-bold text-gray-900">{selectedMessage.subject}</h2>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedMessage.subject}</h2>
+                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
                         <span className="flex items-center gap-1">
                           <User size={14} />
                           {selectedMessage.name}
@@ -176,14 +176,14 @@ export default function AdminMessagesPage() {
 
                   <div className="space-y-4 mb-6">
                     <div>
-                      <span className="text-sm text-gray-500">Email:</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Email:</span>
                       <a href={`mailto:${selectedMessage.email}`} className="ml-2 text-blue-600 hover:underline">
                         {selectedMessage.email}
                       </a>
                     </div>
                     {selectedMessage.phone && (
                       <div>
-                        <span className="text-sm text-gray-500">Phone:</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">Phone:</span>
                         <a href={`tel:${selectedMessage.phone}`} className="ml-2 text-blue-600 hover:underline">
                           {selectedMessage.phone}
                         </a>
@@ -191,11 +191,11 @@ export default function AdminMessagesPage() {
                     )}
                   </div>
 
-                  <div className="border-t pt-6">
-                    <p className="text-gray-700 whitespace-pre-wrap">{selectedMessage.message}</p>
+                  <div className="border-t dark:border-gray-700 pt-6">
+                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{selectedMessage.message}</p>
                   </div>
 
-                  <div className="mt-6 pt-6 border-t">
+                  <div className="mt-6 pt-6 border-t dark:border-gray-700">
                     <a
                       href={`mailto:${selectedMessage.email}?subject=Re: ${selectedMessage.subject}`}
                       className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
@@ -206,9 +206,9 @@ export default function AdminMessagesPage() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-lg border p-12 text-center">
-                  <MessageSquare className="mx-auto text-gray-300 mb-4" size={48} />
-                  <p className="text-gray-500">Select a message to view</p>
+                <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-12 text-center">
+                  <MessageSquare className="mx-auto text-gray-300 dark:text-gray-600 mb-4" size={48} />
+                  <p className="text-gray-500 dark:text-gray-400">Select a message to view</p>
                 </div>
               )}
             </div>

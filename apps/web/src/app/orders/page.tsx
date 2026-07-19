@@ -186,7 +186,7 @@ export default function OrdersPage() {
                   <div className="space-y-3">
                     {order.items.map((item) => (
                       <div key={item.id} className="flex items-center gap-4">
-                        <div className="relative w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                        <div className="relative w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
                           {item.product.images[0] ? (
                             <Image
                               src={item.product.images[0].url}
@@ -196,7 +196,7 @@ export default function OrdersPage() {
                             />
                           ) : (
                             <div className="flex items-center justify-center h-full">
-                              <Package className="text-gray-300" size={24} />
+                              <Package className="text-gray-300 dark:text-gray-600" size={24} />
                             </div>
                           )}
                         </div>

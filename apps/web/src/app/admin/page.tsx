@@ -126,7 +126,7 @@ export default function AdminDashboard() {
   // Session is guaranteed by layout.tsx, but add safety check
   if (!session?.user) {
     return (
-      <div className="min-h-screen bg-light-grey flex items-center justify-center">
+      <div className="min-h-screen bg-light-grey dark:bg-gray-900 flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-sky animate-spin" />
       </div>
     );
@@ -141,11 +141,11 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-light-grey flex">
+    <div className="min-h-screen bg-light-grey dark:bg-gray-900 flex">
       {/* Sidebar - Facebook Style */}
-      <aside className="w-64 bg-white border-r border-border fixed left-0 top-0 bottom-0 flex flex-col">
+      <aside className="w-64 bg-white dark:bg-gray-800 border-r border-border dark:border-gray-700 fixed left-0 top-0 bottom-0 flex flex-col">
         {/* Logo */}
-        <div className="p-4 border-b border-border">
+        <div className="p-4 border-b border-border dark:border-gray-700">
           <Link href="/" className="flex items-center gap-2.5">
             <Image
               src="https://i.ibb.co/LdGYh0t5/IMG-20260516-WA0025.jpg"
@@ -155,14 +155,14 @@ export default function AdminDashboard() {
               className="rounded-xl"
             />
             <div>
-              <span className="font-heading font-bold text-navy text-sm block">Admin Panel</span>
-              <span className="text-[10px] text-navy/50">De-Omega Labaffairs</span>
+              <span className="font-heading font-bold text-navy dark:text-white text-sm block">Admin Panel</span>
+              <span className="text-[10px] text-navy/50 dark:text-gray-400">De-Omega Labaffairs</span>
             </div>
           </Link>
         </div>
 
         {/* User Info */}
-        <div className="p-4 border-b border-border">
+        <div className="p-4 border-b border-border dark:border-gray-700">
           <div className="flex items-center gap-3">
             {session.user.image ? (
               <Image
@@ -178,8 +178,8 @@ export default function AdminDashboard() {
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-navy text-sm truncate">{session.user.name}</p>
-              <p className="text-xs text-navy/50 truncate">{session.user.email}</p>
+              <p className="font-medium text-navy dark:text-white text-sm truncate">{session.user.name}</p>
+              <p className="text-xs text-navy/50 dark:text-gray-400 truncate">{session.user.email}</p>
             </div>
           </div>
         </div>
@@ -203,7 +203,7 @@ export default function AdminDashboard() {
                   w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all
                   ${isActive 
                     ? "bg-sky/10 text-sky" 
-                    : "text-navy/70 hover:bg-light-grey hover:text-navy"
+                    : "text-navy/70 dark:text-gray-300 hover:bg-light-grey dark:hover:bg-gray-700 hover:text-navy dark:hover:text-white"
                   }
                   ${isNavigating ? "opacity-50 cursor-not-allowed" : ""}
                 `}
@@ -247,10 +247,10 @@ export default function AdminDashboard() {
         </nav>
 
         {/* Back to Site */}
-        <div className="p-3 border-t border-border">
+        <div className="p-3 border-t border-border dark:border-gray-700">
           <Link
             href="/"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-navy/60 hover:bg-light-grey hover:text-navy transition-all"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-navy/60 dark:text-gray-400 hover:bg-light-grey dark:hover:bg-gray-700 hover:text-navy dark:hover:text-white transition-all"
           >
             <Home size={20} />
             <span className="font-medium text-sm">Back to Site</span>
@@ -261,10 +261,10 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <main className="flex-1 ml-64">
         {/* Top Header */}
-        <header className="bg-white border-b border-border sticky top-0 z-40">
+        <header className="bg-white dark:bg-gray-800 border-b border-border dark:border-gray-700 sticky top-0 z-40">
           <div className="px-6 py-4">
-            <h1 className="text-xl font-heading font-bold text-navy">Dashboard</h1>
-            <p className="text-sm text-navy/50">Welcome back, {session.user.name?.split(" ")[0]}</p>
+            <h1 className="text-xl font-heading font-bold text-navy dark:text-white">Dashboard</h1>
+            <p className="text-sm text-navy/50 dark:text-gray-400">Welcome back, {session.user.name?.split(" ")[0]}</p>
           </div>
         </header>
 
@@ -316,25 +316,25 @@ export default function AdminDashboard() {
           </div>
 
           {/* Quick Actions */}
-          <h2 className="text-lg font-semibold text-navy mb-4">Quick Actions</h2>
+          <h2 className="text-lg font-semibold text-navy dark:text-white mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {ADMIN_TABS.filter(t => t.id !== "dashboard").map((tab) => (
               <Link
                 key={tab.id}
                 href={tab.href}
-                className="bg-white rounded-xl border border-border p-5 hover:border-sky/30 hover:shadow-soft transition-all group"
+                className="bg-white dark:bg-gray-800 rounded-xl border border-border dark:border-gray-700 p-5 hover:border-sky/30 hover:shadow-soft transition-all group"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-navy/5 rounded-xl flex items-center justify-center group-hover:bg-sky/10 transition-colors">
-                      <tab.icon className="text-navy" size={24} />
+                    <div className="w-12 h-12 bg-navy/5 dark:bg-gray-700 rounded-xl flex items-center justify-center group-hover:bg-sky/10 transition-colors">
+                      <tab.icon className="text-navy dark:text-white" size={24} />
                     </div>
                     <div>
-                      <span className="font-semibold text-navy block">{tab.label}</span>
-                      <span className="text-sm text-navy/50">Manage {tab.label.toLowerCase()}</span>
+                      <span className="font-semibold text-navy dark:text-white block">{tab.label}</span>
+                      <span className="text-sm text-navy/50 dark:text-gray-400">Manage {tab.label.toLowerCase()}</span>
                     </div>
                   </div>
-                  <ChevronRight className="text-navy/30 group-hover:text-sky transition-colors" size={20} />
+                  <ChevronRight className="text-navy/30 dark:text-gray-500 group-hover:text-sky transition-colors" size={20} />
                 </div>
               </Link>
             ))}
@@ -359,12 +359,12 @@ function StatCard({
   subtitle: string;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-border p-5">
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-border dark:border-gray-700 p-5">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-navy/60 mb-1">{label}</p>
-          <p className="text-2xl font-bold text-navy">{value}</p>
-          <p className="text-xs text-navy/40 mt-1">{subtitle}</p>
+          <p className="text-sm text-navy/60 dark:text-gray-400 mb-1">{label}</p>
+          <p className="text-2xl font-bold text-navy dark:text-white">{value}</p>
+          <p className="text-xs text-navy/40 dark:text-gray-500 mt-1">{subtitle}</p>
         </div>
         <div className={`w-11 h-11 ${color} rounded-xl flex items-center justify-center`}>
           <Icon className="text-white" size={22} />

@@ -48,15 +48,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Invalid code format" }, { status: 400 });
     }
 
-    // Determine if it's a hex hash or a transaction reference (e.g. OMEGA-xxx)
+    // Public verification requires the HMAC receipt hash only (not guessable txRef)
     const isHexHash = /^[a-f0-9]+$/i.test(trimmedCode) && trimmedCode.length >= 32;
+    if (!isHexHash) {
+      await logVerifyAttempt(ipAddress, trimmedCode.slice(0, 20), false, "txref_not_allowed");
+      return NextResponse.json(
+        { error: "Invalid receipt. Scan the QR code or enter the full receipt hash." },
+        { status: 400 }
+      );
+    }
 
-    // Find order by receipt hash OR by transaction reference
     const order = await getPrisma().order.findFirst({
       where: {
-        ...(isHexHash
-          ? { receiptHash: trimmedCode }
-          : { txRef: { equals: trimmedCode, mode: "insensitive" as const } }),
+        receiptHash: trimmedCode,
         paymentVerified: true,
       },
       include: {
@@ -76,8 +80,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Invalid or unverified receipt" }, { status: 404 });
     }
 
-    // Verify receipt integrity using HMAC re-derivation with stored salt (only for hash lookups)
-    if (isHexHash && order.receiptSalt) {
+    // Verify receipt integrity using HMAC re-derivation with stored salt
+    if (order.receiptSalt) {
       const isHashValid = verifyReceiptHash(order.txRef, order.txRef, order.receiptSalt, trimmedCode);
       if (!isHashValid) {
         await logVerifyAttempt(ipAddress, trimmedCode.slice(0, 20), false, "hash_mismatch");

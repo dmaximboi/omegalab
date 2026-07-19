@@ -79,11 +79,11 @@ export default function OrderPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-3xl mx-auto px-4 py-8">
           <Link 
             href="/account/orders"
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+            className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6"
           >
             <ArrowLeft size={18} />
             Back to Orders
@@ -94,21 +94,21 @@ export default function OrderPage() {
               <Loader2 className="animate-spin text-blue-600" size={32} />
             </div>
           ) : error ? (
-            <div className="bg-white rounded-xl border p-8 text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-8 text-center">
               <AlertCircle className="mx-auto text-red-500 mb-4" size={48} />
-              <h2 className="text-xl font-bold text-gray-900 mb-2">{error}</h2>
-              <p className="text-gray-500">Please check the order ID and try again</p>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{error}</h2>
+              <p className="text-gray-500 dark:text-gray-400">Please check the order ID and try again</p>
             </div>
           ) : order ? (
             <div className="space-y-6">
               {/* Order Header */}
-              <div className="bg-white rounded-xl border p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                       Order #{order.orderNumber}
                     </h1>
-                    <p className="text-gray-500">Placed on {formatDate(order.createdAt)}</p>
+                    <p className="text-gray-500 dark:text-gray-400">Placed on {formatDate(order.createdAt)}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                     order.status === "DELIVERED" 
@@ -132,7 +132,7 @@ export default function OrderPage() {
                       return (
                         <div key={step.key} className="flex flex-col items-center flex-1">
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            isCompleted ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-400"
+                            isCompleted ? "bg-blue-600 text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-400"
                           }`}>
                             <Icon size={20} />
                           </div>
@@ -143,7 +143,7 @@ export default function OrderPage() {
                           </span>
                           {index < statusSteps.length - 1 && (
                             <div className={`absolute top-5 h-0.5 ${
-                              index < currentIndex ? "bg-blue-600" : "bg-gray-200"
+                              index < currentIndex ? "bg-blue-600" : "bg-gray-200 dark:bg-gray-700"
                             }`} style={{
                               left: `${(index + 0.5) * (100 / statusSteps.length)}%`,
                               width: `${100 / statusSteps.length}%`,
@@ -157,21 +157,21 @@ export default function OrderPage() {
               </div>
 
               {/* Order Items */}
-              <div className="bg-white rounded-xl border p-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Order Items</h2>
+              <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-6">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Order Items</h2>
                 <div className="space-y-4">
                   {order.items.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between py-3 border-b last:border-0">
+                    <div key={item.id} className="flex items-center justify-between py-3 border-b dark:border-gray-700 last:border-0">
                       <div>
-                        <p className="font-medium text-gray-900">{item.name}</p>
-                        <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{item.name}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Qty: {item.quantity}</p>
                       </div>
-                      <p className="font-semibold">₦{(item.price * item.quantity).toLocaleString()}</p>
+                      <p className="font-semibold dark:text-white">₦{(item.price * item.quantity).toLocaleString()}</p>
                     </div>
                   ))}
                 </div>
-                <div className="border-t mt-4 pt-4 flex justify-between items-center">
-                  <span className="text-lg font-bold">Total</span>
+                <div className="border-t dark:border-gray-700 mt-4 pt-4 flex justify-between items-center">
+                  <span className="text-lg font-bold dark:text-white">Total</span>
                   <span className="text-xl font-bold text-blue-600">
                     ₦{order.total.toLocaleString()}
                   </span>
@@ -180,9 +180,9 @@ export default function OrderPage() {
 
               {/* Shipping Address */}
               {order.shippingAddress && (
-                <div className="bg-white rounded-xl border p-6">
-                  <h2 className="text-lg font-bold text-gray-900 mb-2">Shipping Address</h2>
-                  <p className="text-gray-600">{order.shippingAddress}</p>
+                <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-6">
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Shipping Address</h2>
+                  <p className="text-gray-600 dark:text-gray-400">{order.shippingAddress}</p>
                 </div>
               )}
             </div>

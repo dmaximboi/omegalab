@@ -64,7 +64,7 @@ export default function RegisterPage() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-lg"
       >
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-navy to-navy/90 p-6 text-white text-center">
             <Beaker className="mx-auto mb-3" size={40} />
@@ -95,14 +95,14 @@ export default function RegisterPage() {
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-4"
                 >
-                  <h2 className="text-lg font-semibold text-navy mb-4">
+                  <h2 className="text-lg font-semibold text-navy dark:text-white mb-4">
                     Why Create an Account?
                   </h2>
                   
                   {FAQ_ITEMS.map((item, i) => (
-                    <div key={i} className="bg-light-grey rounded-xl p-4">
-                      <h3 className="font-medium text-navy mb-2">{item.question}</h3>
-                      <p className="text-sm text-navy/60">{item.answer}</p>
+                    <div key={i} className="bg-light-grey dark:bg-gray-900 rounded-xl p-4">
+                      <h3 className="font-medium text-navy dark:text-white mb-2">{item.question}</h3>
+                      <p className="text-sm text-navy/60 dark:text-gray-400">{item.answer}</p>
                     </div>
                   ))}
 
@@ -122,7 +122,7 @@ export default function RegisterPage() {
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-4"
                 >
-                  <h2 className="text-lg font-semibold text-navy mb-4">
+                  <h2 className="text-lg font-semibold text-navy dark:text-white mb-4">
                     Your Details
                   </h2>
 
@@ -219,11 +219,11 @@ export default function RegisterPage() {
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-4"
                 >
-                  <h2 className="text-lg font-semibold text-navy mb-4">
+                  <h2 className="text-lg font-semibold text-navy dark:text-white mb-4">
                     Terms & Conditions
                   </h2>
 
-                  <div className="bg-light-grey rounded-xl p-4 max-h-40 overflow-y-auto text-sm text-navy/70">
+                  <div className="bg-light-grey dark:bg-gray-900 rounded-xl p-4 max-h-40 overflow-y-auto text-sm text-navy/70 dark:text-gray-400">
                     <p className="mb-2">
                       By creating an account, you agree to our Terms of Service and Privacy Policy. 
                       Your data will be processed securely and in accordance with applicable data protection laws.
@@ -250,7 +250,7 @@ export default function RegisterPage() {
                         >
                           {acceptedTerms[i] && <Check size={14} className="text-white" />}
                         </div>
-                        <span className="text-sm text-navy/70">{term}</span>
+                        <span className="text-sm text-navy/70 dark:text-gray-400">{term}</span>
                       </label>
                     ))}
                   </div>
@@ -283,7 +283,7 @@ export default function RegisterPage() {
               )}
             </AnimatePresence>
 
-            <p className="text-center text-sm text-navy/60 mt-6">
+            <p className="text-center text-sm text-navy/60 dark:text-gray-400 mt-6">
               Already have an account?{" "}
               <Link href="/login" className="link font-medium">
                 Sign in

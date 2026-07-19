@@ -55,7 +55,7 @@ export default function AdminUsersPage() {
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
+      <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-medium rounded-full">
         <User size={12} />
         User
       </span>
@@ -88,21 +88,21 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
+      <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link 
                 href="/admin"
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
               >
                 <ArrowLeft size={20} />
               </Link>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Users</h1>
-                <p className="text-sm text-gray-500">Manage user accounts and sessions</p>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Users</h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Manage user accounts and sessions</p>
               </div>
             </div>
           </div>
@@ -111,16 +111,16 @@ export default function AdminUsersPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Filters */}
-        <div className="bg-white rounded-lg border p-4 mb-6 flex flex-wrap gap-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-4 mb-6 flex flex-wrap gap-4">
           <div className="flex-1 min-w-[200px]">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={16} />
               <input
                 type="text"
                 placeholder="Search by email or name..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-gray-100"
               />
             </div>
           </div>
@@ -128,13 +128,13 @@ export default function AdminUsersPage() {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="appearance-none pr-10 pl-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              className="appearance-none pr-10 pl-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 dark:text-gray-100"
             >
               <option value="all">All Roles</option>
               <option value="admin">Admins</option>
               <option value="user">Users</option>
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" size={16} />
           </div>
         </div>
 
@@ -143,41 +143,41 @@ export default function AdminUsersPage() {
             <Loader2 className="animate-spin text-blue-600" size={32} />
           </div>
         ) : filteredUsers.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg border">
-            <User className="mx-auto text-gray-300 mb-4" size={48} />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-            <p className="text-gray-500">Users will appear here once they sign up</p>
+          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700">
+            <User className="mx-auto text-gray-300 dark:text-gray-600 mb-4" size={48} />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No users found</h3>
+            <p className="text-gray-500 dark:text-gray-400">Users will appear here once they sign up</p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg border overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b">
+                <thead className="bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Login</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP Address</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">User</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Role</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Last Login</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">IP Address</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Created</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y dark:divide-gray-700">
                   {filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
+                    <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-4 py-3">
                         <div>
-                          <p className="font-medium text-gray-900">{user.name || "No name"}</p>
-                          <p className="text-sm text-gray-500">{user.email}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{user.name || "No name"}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
                         </div>
                       </td>
                       <td className="px-4 py-3">
                         {getRoleBadge(user.role)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(user.lastLoginAt)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         {user.lastLoginIp || "N/A"}
                       </td>
                       <td className="px-4 py-3">
@@ -196,7 +196,7 @@ export default function AdminUsersPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(user.createdAt)}
                       </td>
                     </tr>

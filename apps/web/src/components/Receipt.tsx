@@ -89,32 +89,32 @@ export function Receipt({ orderNumber, receiptHash, customerName, items, total, 
   return (
     <div>
       {/* Printable Receipt */}
-      <div ref={receiptRef} className="bg-white border rounded-xl p-6 max-w-sm mx-auto font-mono text-sm">
+      <div ref={receiptRef} className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl p-6 max-w-sm mx-auto font-mono text-sm dark:text-white">
         {/* Store Header */}
-        <div className="text-center border-b-2 border-dashed border-gray-300 pb-3 mb-3">
+        <div className="text-center border-b-2 border-dashed border-gray-300 dark:border-gray-700 pb-3 mb-3">
           <h2 className="font-bold text-base">DE-OMEGA LABAFFAIRS</h2>
-          <p className="text-[10px] text-gray-500">Nig. Ltd. | Ilorin, Kwara State</p>
-          <p className="text-[10px] text-gray-500">info@omegalabaffairs.com</p>
+          <p className="text-[10px] text-gray-500 dark:text-gray-400">Nig. Ltd. | Ilorin, Kwara State</p>
+          <p className="text-[10px] text-gray-500 dark:text-gray-400">info@omegalabaffairs.com</p>
         </div>
 
         {/* Order Info */}
         <div className="text-xs space-y-1 mb-3">
           <div className="flex justify-between">
-            <span className="text-gray-500">Order:</span>
+            <span className="text-gray-500 dark:text-gray-400">Order:</span>
             <span className="font-semibold">{orderNumber}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Customer:</span>
+            <span className="text-gray-500 dark:text-gray-400">Customer:</span>
             <span>{customerName}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Date:</span>
+            <span className="text-gray-500 dark:text-gray-400">Date:</span>
             <span>{date}</span>
           </div>
         </div>
 
         {/* Items */}
-        <div className="border-t border-dashed border-gray-300 pt-2 mb-2">
+        <div className="border-t border-dashed border-gray-300 dark:border-gray-700 pt-2 mb-2">
           {items.map((item, idx) => (
             <div key={idx} className="flex justify-between text-xs py-0.5">
               <span className="flex-1 truncate">
@@ -128,7 +128,7 @@ export function Receipt({ orderNumber, receiptHash, customerName, items, total, 
         </div>
 
         {/* Total */}
-        <div className="border-t-2 border-dashed border-gray-300 pt-2 flex justify-between font-bold">
+        <div className="border-t-2 border-dashed border-gray-300 dark:border-gray-700 pt-2 flex justify-between font-bold">
           <span>TOTAL</span>
           <span>₦{total.toLocaleString()}</span>
         </div>
@@ -142,13 +142,13 @@ export function Receipt({ orderNumber, receiptHash, customerName, items, total, 
             includeMargin
             className="mx-auto"
           />
-          <p className="text-[9px] text-gray-400 mt-1">
+          <p className="text-[9px] text-gray-400 dark:text-gray-400 mt-1">
             Scan to verify authenticity
           </p>
         </div>
 
         {/* Footer */}
-        <div className="text-center text-[10px] text-gray-400 border-t border-dashed border-gray-200 pt-2 mt-3">
+        <div className="text-center text-[10px] text-gray-400 dark:text-gray-400 border-t border-dashed border-gray-200 dark:border-gray-700 pt-2 mt-3">
           <p>Thank you for your purchase!</p>
           <p>Receipt Hash: {receiptHash.slice(0, 12)}...</p>
           <p>This receipt is cryptographically verifiable</p>

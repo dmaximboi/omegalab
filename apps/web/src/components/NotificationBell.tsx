@@ -121,7 +121,7 @@ export default function NotificationBell() {
       case "MESSAGE":
         return <MessageSquare size={16} className="text-green-500 shrink-0" />;
       default:
-        return <Info size={16} className="text-gray-400 shrink-0" />;
+        return <Info size={16} className="text-gray-400 dark:text-gray-500 shrink-0" />;
     }
   };
 
@@ -218,7 +218,7 @@ export default function NotificationBell() {
                         </p>
                         <button
                           onClick={(e) => deleteNotification(notification.id, e)}
-                          className="text-gray-400 hover:text-red-500 transition-colors shrink-0 p-0.5"
+                          className="text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors shrink-0 p-0.5"
                           title="Delete"
                         >
                           <Trash2 size={13} />

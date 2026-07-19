@@ -121,6 +121,24 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Never cache sensitive HTML pages (shared-device / stale PII risk)
+  const sensitivePaths = [
+    "/orders",
+    "/order/",
+    "/payment/",
+    "/admin",
+    "/login",
+    "/register",
+  ];
+  if (
+    request.mode === "navigate" &&
+    sensitivePaths.some(
+      (p) => url.pathname === p || url.pathname.startsWith(p.endsWith("/") ? p : p + "/") || url.pathname.startsWith(p)
+    )
+  ) {
+    return; // network only, no SW caching
+  }
+
   // Choose strategy based on request type
   if (request.mode === "navigate") {
     // HTML pages - network first

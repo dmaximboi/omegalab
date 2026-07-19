@@ -122,9 +122,12 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     }
   };
 
+  const fieldClass =
+    "w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-gray-100";
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Loader2 className="animate-spin text-blue-600" size={32} />
       </div>
     );
@@ -132,31 +135,31 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <Package className="mx-auto text-gray-300 mb-4" size={48} />
-          <p className="text-gray-500">Product not found</p>
+          <Package className="mx-auto text-gray-300 dark:text-gray-600 mb-4" size={48} />
+          <p className="text-gray-500 dark:text-gray-400">Product not found</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
+      <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link 
                 href="/admin/products" 
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
               >
                 <ArrowLeft size={20} />
               </Link>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Edit Product</h1>
-                <p className="text-sm text-gray-500">Update product details</p>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Edit Product</h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Update product details</p>
               </div>
             </div>
           </div>
@@ -165,55 +168,55 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         <form onSubmit={handleSubmit} className="max-w-2xl">
-          <div className="bg-white rounded-lg border p-6 space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-6 space-y-6">
             {/* Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Product Name
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className={fieldClass}
                 required
               />
             </div>
 
             {/* Slug */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Slug (URL-friendly identifier)
               </label>
               <input
                 type="text"
                 value={formData.slug}
                 onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className={fieldClass}
                 placeholder="e.g. digital-microscope-x200"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Leave empty to auto-generate. Used in product URLs.
               </p>
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Description
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={4}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className={fieldClass}
                 required
               />
             </div>
 
             {/* Price */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Price (₦)
               </label>
               <input
@@ -221,21 +224,21 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 step="0.01"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className={fieldClass}
                 required
               />
             </div>
 
             {/* Category */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Category
               </label>
               <input
                 type="text"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className={fieldClass}
                 required
               />
             </div>
@@ -247,20 +250,20 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 id="isActive"
                 checked={formData.isActive}
                 onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
               />
-              <label htmlFor="isActive" className="text-sm text-gray-700">
+              <label htmlFor="isActive" className="text-sm text-gray-700 dark:text-gray-300">
                 Active (visible in catalogue)
               </label>
             </div>
 
             {/* Images Preview */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Current Images ({product.images.length})
               </label>
               {product.images.length === 0 ? (
-                <p className="text-sm text-gray-500">No images uploaded yet.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">No images uploaded yet.</p>
               ) : (
                 <div className="grid grid-cols-4 gap-2">
                   {product.images.map((image) => (
@@ -302,7 +305,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
               </button>
               <Link
                 href="/admin/products"
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50 transition"
+                className="px-4 py-2 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition dark:text-gray-300"
               >
                 Cancel
               </Link>

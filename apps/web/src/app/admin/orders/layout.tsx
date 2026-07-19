@@ -28,10 +28,10 @@ export default function AdminOrdersLayout({ children }: { children: React.ReactN
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-light-grey flex">
+    <div className="min-h-screen bg-light-grey dark:bg-gray-900 flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-border fixed left-0 top-0 bottom-0 flex flex-col">
-        <div className="p-4 border-b border-border">
+      <aside className="w-64 bg-white dark:bg-gray-800 border-r border-border dark:border-gray-700 fixed left-0 top-0 bottom-0 flex flex-col">
+        <div className="p-4 border-b border-border dark:border-gray-700">
           <Link href="/" className="flex items-center gap-2.5">
             <Image
               src="https://i.ibb.co/LdGYh0t5/IMG-20260516-WA0025.jpg"
@@ -41,13 +41,13 @@ export default function AdminOrdersLayout({ children }: { children: React.ReactN
               className="rounded-xl"
             />
             <div>
-              <span className="font-heading font-bold text-navy text-sm block">Admin Panel</span>
-              <span className="text-[10px] text-navy/50">De-Omega Labaffairs</span>
+              <span className="font-heading font-bold text-navy dark:text-white text-sm block">Admin Panel</span>
+              <span className="text-[10px] text-navy/50 dark:text-gray-400">De-Omega Labaffairs</span>
             </div>
           </Link>
         </div>
 
-        <div className="p-4 border-b border-border">
+        <div className="p-4 border-b border-border dark:border-gray-700">
           <div className="flex items-center gap-3">
             {session?.user?.image ? (
               <Image
@@ -63,8 +63,8 @@ export default function AdminOrdersLayout({ children }: { children: React.ReactN
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-navy text-sm truncate">{session?.user?.name}</p>
-              <p className="text-xs text-navy/50 truncate">{session?.user?.email}</p>
+              <p className="font-medium text-navy dark:text-white text-sm truncate">{session?.user?.name}</p>
+              <p className="text-xs text-navy/50 dark:text-gray-400 truncate">{session?.user?.email}</p>
             </div>
           </div>
         </div>
@@ -79,7 +79,7 @@ export default function AdminOrdersLayout({ children }: { children: React.ReactN
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                   isActive
                     ? "bg-sky/10 text-sky"
-                    : "text-navy/70 hover:bg-light-grey hover:text-navy"
+                    : "text-navy/70 dark:text-gray-300 hover:bg-light-grey dark:hover:bg-gray-700 hover:text-navy dark:hover:text-white"
                 }`}
               >
                 <tab.icon size={20} />
@@ -90,10 +90,10 @@ export default function AdminOrdersLayout({ children }: { children: React.ReactN
           })}
         </nav>
 
-        <div className="p-3 border-t border-border">
+        <div className="p-3 border-t border-border dark:border-gray-700">
           <Link
             href="/"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-navy/60 hover:bg-light-grey hover:text-navy transition-all"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-navy/60 dark:text-gray-400 hover:bg-light-grey dark:hover:bg-gray-700 hover:text-navy dark:hover:text-white transition-all"
           >
             <Home size={20} />
             <span className="font-medium text-sm">Back to Site</span>
@@ -103,10 +103,10 @@ export default function AdminOrdersLayout({ children }: { children: React.ReactN
 
       {/* Main Content */}
       <main className="flex-1 ml-64">
-        <header className="bg-white border-b border-border sticky top-0 z-40">
+        <header className="bg-white dark:bg-gray-800 border-b border-border dark:border-gray-700 sticky top-0 z-40">
           <div className="px-6 py-4">
-            <h1 className="text-xl font-heading font-bold text-navy">Orders & Transactions</h1>
-            <p className="text-sm text-navy/50">Monitor payment lifecycle, security events, and transaction logs</p>
+            <h1 className="text-xl font-heading font-bold text-navy dark:text-white">Orders & Transactions</h1>
+            <p className="text-sm text-navy/50 dark:text-gray-400">Monitor payment lifecycle, security events, and transaction logs</p>
           </div>
         </header>
         <div className="p-6">{children}</div>

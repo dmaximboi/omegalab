@@ -95,10 +95,7 @@ export default function OrderPage() {
 
       const data = await res.json();
 
-      // Save payment token for the payment page to use
-      localStorage.setItem(`payment_token_${data.orderId}`, data.paymentToken);
-
-      // Redirect to dedicated payment processing page
+      // Payment token is set as httpOnly cookie by the API — never store in localStorage
       router.push(`/payment/${data.orderId}`);
     } catch (err: any) {
       setError(err.message || "Could not create order. Please try again.");
@@ -133,7 +130,7 @@ export default function OrderPage() {
           <h1 className="page-title mb-8">Your Order</h1>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg text-sm">
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg text-sm">
               {error}
             </div>
           )}
@@ -158,7 +155,7 @@ export default function OrderPage() {
                     key={item.id}
                     className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4 flex gap-4"
                   >
-                    <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                    <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
                       {item.image ? (
                         <img
                           src={item.image}
@@ -179,19 +176,19 @@ export default function OrderPage() {
                       </p>
 
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 border rounded-lg">
+                        <div className="flex items-center gap-2 border dark:border-gray-700 rounded-lg">
                           <button
                             onClick={() => handleQuantityChange(item.id, -1)}
-                            className="p-2 hover:bg-gray-100 transition"
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                           >
                             <Minus size={16} />
                           </button>
-                          <span className="px-3 min-w-[40px] text-center">
+                          <span className="px-3 min-w-[40px] text-center dark:text-white">
                             {item.quantity}
                           </span>
                           <button
                             onClick={() => handleQuantityChange(item.id, 1)}
-                            className="p-2 hover:bg-gray-100 transition"
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                           >
                             <Plus size={16} />
                           </button>
@@ -199,7 +196,7 @@ export default function OrderPage() {
 
                         <button
                           onClick={() => handleRemove(item.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -218,11 +215,11 @@ export default function OrderPage() {
               {/* Checkout Form */}
               <div className="space-y-6">
                 <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-6">
-                  <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
+                  <h2 className="text-lg font-semibold mb-4 dark:text-white">Order Summary</h2>
                   <div className="space-y-3 mb-6">
                     <div className="flex justify-between text-sm">
                       <span className="text-navy/60 dark:text-gray-400">Subtotal</span>
-                      <span className="font-medium">
+                      <span className="font-medium dark:text-white">
                         ₦{total.toLocaleString()}
                       </span>
                     </div>
@@ -230,9 +227,9 @@ export default function OrderPage() {
                       <span className="text-navy/60 dark:text-gray-400">Delivery</span>
                       <span className="font-medium text-green-600">Calculated at checkout</span>
                     </div>
-                    <div className="border-t pt-3">
+                    <div className="border-t dark:border-gray-700 pt-3">
                       <div className="flex justify-between">
-                        <span className="font-semibold">Total</span>
+                        <span className="font-semibold dark:text-white">Total</span>
                         <span className="text-xl font-bold text-sky">
                           ₦{total.toLocaleString()}
                         </span>
@@ -242,7 +239,7 @@ export default function OrderPage() {
 
                   <form onSubmit={handleCheckout} className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                         Full Name *
                       </label>
                       <input
@@ -256,7 +253,7 @@ export default function OrderPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                         Phone *
                       </label>
                       <input
@@ -270,7 +267,7 @@ export default function OrderPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                         Delivery Address *
                       </label>
                       <textarea

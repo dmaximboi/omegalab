@@ -313,10 +313,10 @@ export default function OrderDetailPage() {
           <div className="p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
             <h3 className="font-semibold text-gray-900 dark:text-white">Order Items</h3>
           </div>
-          <div className="divide-y">
+          <div className="divide-y dark:divide-gray-700">
             {order.items.map((item) => (
               <div key={item.id} className="p-4 flex items-center gap-4">
-                <div className="relative w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                <div className="relative w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
                   {item.product.images[0] ? (
                     <Image
                       src={item.product.images[0].url}
@@ -326,7 +326,7 @@ export default function OrderDetailPage() {
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full">
-                      <Package className="text-gray-300" size={32} />
+                      <Package className="text-gray-300 dark:text-gray-600" size={32} />
                     </div>
                   )}
                 </div>
@@ -390,10 +390,10 @@ export default function OrderDetailPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold">Order Receipt</h3>
+                <h3 className="text-xl font-bold dark:text-white">Order Receipt</h3>
                 <button
                   onClick={() => setShowReceipt(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                 >
                   <XCircle size={20} />
                 </button>
@@ -401,44 +401,44 @@ export default function OrderDetailPage() {
               
               <div className="space-y-4">
                 <div className="text-center">
-                  <h2 className="text-2xl font-bold text-navy">De-Omega Labaffairs</h2>
-                  <p className="text-sm text-navy/60">Order Receipt</p>
+                  <h2 className="text-2xl font-bold text-navy dark:text-white">De-Omega Labaffairs</h2>
+                  <p className="text-sm text-navy/60 dark:text-gray-400">Order Receipt</p>
                 </div>
                 
-                <div className="border-t pt-4 space-y-2">
+                <div className="border-t dark:border-gray-700 pt-4 space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Order ID:</span>
-                    <span className="font-medium">#{receipt.order.id.slice(-8).toUpperCase()}</span>
+                    <span className="text-gray-600 dark:text-gray-400">Order ID:</span>
+                    <span className="font-medium dark:text-white">#{receipt.order.id.slice(-8).toUpperCase()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Date:</span>
-                    <span className="font-medium">{new Date(receipt.order.createdAt).toLocaleString()}</span>
+                    <span className="text-gray-600 dark:text-gray-400">Date:</span>
+                    <span className="font-medium dark:text-white">{new Date(receipt.order.createdAt).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Status:</span>
+                    <span className="text-gray-600 dark:text-gray-400">Status:</span>
                     <span className={`font-medium ${
                       receipt.order.status === 'PAID' ? 'text-green-600' : 'text-yellow-600'
                     }`}>{receipt.order.status}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Total:</span>
+                    <span className="text-gray-600 dark:text-gray-400">Total:</span>
                     <span className="font-bold text-blue-600">₦{receipt.order.totalAmount.toLocaleString()}</span>
                   </div>
                 </div>
 
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold mb-2">Items</h4>
+                <div className="border-t dark:border-gray-700 pt-4">
+                  <h4 className="font-semibold mb-2 dark:text-white">Items</h4>
                   {receipt.order.items.map((item: any, idx: number) => (
-                    <div key={idx} className="flex justify-between text-sm">
+                    <div key={idx} className="flex justify-between text-sm dark:text-gray-300">
                       <span>{item.product} × {item.quantity}</span>
                       <span>₦{(item.unitPrice * item.quantity).toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="border-t pt-4 text-center">
+                <div className="border-t dark:border-gray-700 pt-4 text-center">
                   <img src={receipt.qrCode} alt="QR Code" className="mx-auto w-48 h-48" />
-                  <p className="text-sm text-gray-500 mt-2">Scan to verify order</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Scan to verify order</p>
                 </div>
 
                 <button

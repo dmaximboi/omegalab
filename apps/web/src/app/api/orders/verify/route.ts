@@ -163,32 +163,48 @@ export async function POST(request: Request) {
       response.cookies.delete("payment_token");
       return response;
     } else {
-      // STEP 5: FAILED
-      const failReason = !isSuccess ? "flw_not_success" : !txRefMatch ? "txref_mismatch" : !amountOk ? "amount_mismatch" : "currency_mismatch";
+      // Only mark FAILED when Flutterwave confirms this tx_ref actually failed.
+      // Mismatches / unknown transaction IDs are treated as unverified attempts
+      // (prevents griefing an in-progress order with a stolen payment_token).
+      const failReason = !isSuccess
+        ? "flw_not_success"
+        : !txRefMatch
+          ? "txref_mismatch"
+          : !amountOk
+            ? "amount_mismatch"
+            : "currency_mismatch";
+      const definitiveFailure = Boolean(flwData) && txRefMatch && !isSuccess;
 
-      await getPrisma().order.update({ where: { id: orderId }, data: { status: OrderStatus.FAILED } });
+      if (definitiveFailure) {
+        await getPrisma().order.update({ where: { id: orderId }, data: { status: OrderStatus.FAILED } });
+        await createNotification(order.userId, {
+          type: "order_failed",
+          title: "Payment Failed",
+          body: `Your payment for order #${order.txRef} could not be verified. Reference: ${transaction_id}. Please contact support if you were charged. [orderId:${orderId}]`,
+        });
+      } else {
+        // Revert to INITIATED so the customer can retry
+        await getPrisma().order.update({ where: { id: orderId }, data: { status: OrderStatus.INITIATED } });
+      }
 
       await logPayment({
         orderId,
         txRef: order.txRef,
         flwRef: String(transaction_id),
-        status: `step:FAILED:${failReason}`,
+        status: definitiveFailure ? `step:FAILED:${failReason}` : `step:VERIFY_REJECTED:${failReason}`,
         responseData: JSON.stringify(flwData || flwResponse),
         ipAddress,
       });
 
-      console.error("[PAYMENT] Step 5 FAILED:", orderId, failReason);
+      console.error("[PAYMENT] Verification rejected:", orderId, failReason, "definitive:", definitiveFailure);
 
-      // Create failure notification for the user
-      await createNotification(order.userId, {
-        type: "order_failed",
-        title: "Payment Failed",
-        body: `Your payment for order #${order.txRef} could not be verified. Reference: ${transaction_id}. Please contact support if you were charged. [orderId:${orderId}]`,
-      });
-
-      // Clear payment token cookie on failure
-      const response = NextResponse.json({ error: "Payment could not be verified", txRef: order.txRef }, { status: 400 });
-      response.cookies.delete("payment_token");
+      const response = NextResponse.json(
+        { error: "Payment could not be verified", txRef: order.txRef },
+        { status: 400 }
+      );
+      if (definitiveFailure) {
+        response.cookies.delete("payment_token");
+      }
       return response;
     }
   } catch (error) {
