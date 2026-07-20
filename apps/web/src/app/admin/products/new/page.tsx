@@ -2,15 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, X, Loader2, Upload } from "lucide-react";
-import { UploadButton } from "@uploadthing/react";
-import type { OurFileRouter } from "@/lib/uploadthing";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { ProductImageUploader } from "@/components/admin/ProductImageUploader";
 
 export const dynamic = "force-dynamic";
 
 export default function NewProductPage() {
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     name: "",
@@ -21,26 +19,32 @@ export default function NewProductPage() {
     images: [] as string[],
   });
 
-  const handleUploadBegin = () => {
-    setUploading(true);
-    setError("");
+  const deleteOrphanUrls = async (urls: string[]) => {
+    if (urls.length === 0) return;
+    await fetch("/api/admin/uploads/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ urls }),
+    });
   };
 
-  const handleUploadComplete = (res: any) => {
-    setUploading(false);
-    // Handle multiple file uploads
-    const uploadedUrls = res.map((file: any) => file.url);
-    if (uploadedUrls.length > 0) {
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, ...uploadedUrls],
-      }));
+  const handleUploaded = async (urls: string[]) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: [...prev.images, ...urls].slice(0, 5),
+    }));
+  };
+
+  const handleRemovePending = async (url: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.filter((u) => u !== url),
+    }));
+    try {
+      await deleteOrphanUrls([url]);
+    } catch {
+      setError("Image removed from form, but storage cleanup failed. Try again later.");
     }
-  };
-
-  const handleUploadError = (error: Error) => {
-    setUploading(false);
-    setError(`Upload failed: ${error.message}`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,13 +64,13 @@ export default function NewProductPage() {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to create product");
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Failed to create product");
       }
 
-      // Redirect to products list
       window.location.href = "/admin/products";
-    } catch {
-      setError("Could not create product. Please try again.");
+    } catch (err: any) {
+      setError(err.message || "Could not create product. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -91,7 +95,10 @@ export default function NewProductPage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-6">
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-6 space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-6 space-y-6"
+        >
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Product Name *
@@ -113,13 +120,15 @@ export default function NewProductPage() {
             <input
               type="text"
               value={formData.slug}
-              onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+                })
+              }
               className={fieldClass}
               placeholder="e.g. digital-microscope-x200 (auto-generated if empty)"
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Leave empty to auto-generate from name. Used in product URLs to avoid duplicates.
-            </p>
           </div>
 
           <div>
@@ -174,50 +183,17 @@ export default function NewProductPage() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Product Images
             </label>
-            <UploadButton<OurFileRouter, "productImage">
-              endpoint="productImage"
-              onUploadBegin={handleUploadBegin}
-              onClientUploadComplete={handleUploadComplete}
-              onUploadError={handleUploadError}
-              className="ut-button:bg-blue-600 ut-button:hover:bg-blue-700 ut-button:rounded-lg"
-              appearance={{
-                button: "ut-uploading:cursor-not-allowed",
-                container: "w-full",
-              }}
+            <ProductImageUploader
+              pendingUrls={formData.images}
+              onUploaded={handleUploaded}
+              onRemovePending={handleRemovePending}
+              maxFiles={5}
+              disabled={loading}
             />
-            
-            {uploading && (
-              <div className="flex items-center gap-2 mt-3 text-sm text-blue-600">
-                <Loader2 className="animate-spin" size={16} />
-                <span>Uploading images...</span>
-              </div>
-            )}
-            
-            {formData.images.length > 0 && (
-              <div className="grid grid-cols-4 gap-2 mt-4">
-                {formData.images.map((url, index) => (
-                  <div key={`${url}-${index}`} className="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                    <img src={url} alt="" className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormData(prev => ({
-                          ...prev,
-                          images: prev.images.filter((_, i) => i !== index),
-                        }));
-                      }}
-                      className="absolute top-2 right-2 p-1 bg-white dark:bg-gray-800 rounded-full shadow hover:bg-red-50"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           {error && (
-            <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg">
+            <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm rounded-lg">
               {error}
             </div>
           )}

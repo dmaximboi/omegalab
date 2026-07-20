@@ -177,6 +177,18 @@ export function Footer() {
             </Link>
           </div>
         </div>
+
+        <p className="text-center text-xs text-white/50 mt-4">
+          Built by{" "}
+          <a
+            href="https://dmaximboi.vercel.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-white transition-colors"
+          >
+            maxiM
+          </a>
+        </p>
       </div>
     </footer>
   );

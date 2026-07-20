@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-// Lazy Prisma client - only instantiated when first accessed
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
 function getPrisma() {
@@ -21,25 +21,30 @@ function getPrisma() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { essential, analytics, marketing, version } = body;
-
     const forwarded = request.headers.get("x-forwarded-for");
     const ipAddress = forwarded?.split(",")[0]?.trim() || "unknown";
+
+    // Cap spam without blocking the UX (always respond ok when limited)
+    const rateCheck = await checkRateLimit(`consent:${ipAddress}`, 5, 60000, 5 * 60 * 1000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ ok: true });
+    }
+
+    const body = await request.json();
+    const { essential, analytics, marketing, version } = body;
     const userAgent = request.headers.get("user-agent")?.slice(0, 500) || "unknown";
 
-    // Log cookie consent for GDPR/NDPR compliance
     await getPrisma().securityEvent.create({
       data: {
         eventType: "cookie_consent",
         severity: "info",
         ipAddress,
-        description: `Cookie consent: essential=${essential}, analytics=${analytics}, marketing=${marketing}`,
+        description: `Cookie consent: essential=${Boolean(essential)}, analytics=${Boolean(analytics)}, marketing=${Boolean(marketing)}`,
         metadata: JSON.stringify({
-          essential,
-          analytics,
-          marketing,
-          version,
+          essential: Boolean(essential),
+          analytics: Boolean(analytics),
+          marketing: Boolean(marketing),
+          version: typeof version === "string" ? version.slice(0, 32) : null,
           userAgent,
           timestamp: new Date().toISOString(),
         }),
@@ -49,7 +54,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("[CONSENT] Log error:", error);
-    // Always return 200 — consent logging should never block the user
     return NextResponse.json({ ok: true });
   }
 }

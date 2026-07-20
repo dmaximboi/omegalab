@@ -124,26 +124,6 @@ export async function POST(request: Request) {
     const paymentToken = crypto.randomBytes(32).toString('hex');
     const tokenExpiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
 
-    // Idempotency: check if same user+items already has a PENDING order in last 5 min
-    const recentOrder = await getPrisma().order.findFirst({
-      where: {
-        status: OrderStatus.INITIATED,
-        ipAddress,
-        createdAt: { gte: new Date(Date.now() - 5 * 60 * 1000) },
-        totalAmount: totalAsNumber,
-      },
-    });
-
-    if (recentOrder) {
-      // Return the existing order instead of creating duplicate
-      return NextResponse.json({
-        orderId: recentOrder.id,
-        txRef: recentOrder.txRef,
-        paymentToken: (recentOrder as any).paymentToken,
-        amount: totalAsNumber,
-      });
-    }
-
     // Use the authenticated user directly
     const sessionUser = await getPrisma().user.findUnique({
       where: { id: session.user.id },
@@ -151,6 +131,37 @@ export async function POST(request: Request) {
 
     if (!sessionUser) {
       return NextResponse.json({ error: "User not found" }, { status: 401 });
+    }
+
+    // Idempotency: same user + amount with INITIATED order in last 5 min (never IP-only)
+    const recentOrder = await getPrisma().order.findFirst({
+      where: {
+        userId: sessionUser.id,
+        status: OrderStatus.INITIATED,
+        createdAt: { gte: new Date(Date.now() - 5 * 60 * 1000) },
+        totalAmount: totalAsNumber,
+      },
+    });
+
+    if (recentOrder) {
+      // Reuse order — payment token stays httpOnly cookie only (never JSON)
+      const response = NextResponse.json({
+        orderId: recentOrder.id,
+        txRef: recentOrder.txRef,
+        amount: totalAsNumber,
+        userEmail: sessionUser.email,
+        userName: sessionUser.name,
+      });
+      if (recentOrder.paymentToken) {
+        response.cookies.set("payment_token", recentOrder.paymentToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 60 * 60,
+          path: "/",
+        });
+      }
+      return response;
     }
 
     // Generate HMAC receipt hash with salt (orderId not available yet, use txRef as unique identifier)

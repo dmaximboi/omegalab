@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
 import crypto from "crypto";
+import { isAllowedUploadThingUrl } from "@/lib/uploadthing-url";
 
 export const dynamic = "force-dynamic";
 
@@ -77,6 +78,11 @@ export async function POST(request: Request) {
           .replace(/(^-|-$)/g, "")
           + "-" + crypto.randomBytes(4).toString("hex");
 
+    // Only accept UploadThing CDN URLs (prevent arbitrary remote URLs)
+    const safeImages = Array.isArray(images)
+      ? images.filter((url: unknown) => typeof url === "string" && isAllowedUploadThingUrl(url)).slice(0, 5)
+      : [];
+
     const product = await getPrisma().product.create({
       data: {
         slug,
@@ -86,7 +92,7 @@ export async function POST(request: Request) {
         category,
         isActive: isActive ?? true,
         images: {
-          create: (images || []).map((url: string, index: number) => ({
+          create: safeImages.map((url: string, index: number) => ({
             url,
             order: index,
           })),
