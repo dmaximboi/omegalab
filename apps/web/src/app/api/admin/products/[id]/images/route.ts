@@ -7,6 +7,7 @@ import {
   extractUploadThingKey,
   isAllowedUploadThingUrl,
 } from "@/lib/uploadthing-url";
+import { looksLikeProductId } from "@/lib/product-slug";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,10 @@ export async function POST(
     const session = await getServerSession(authOptions);
     if (!session?.user?.isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (!looksLikeProductId(params.id)) {
+      return NextResponse.json({ error: "Invalid product id" }, { status: 400 });
     }
 
     const product = await getPrisma().product.findUnique({
@@ -92,6 +97,10 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     if (!session?.user?.isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (!looksLikeProductId(params.id)) {
+      return NextResponse.json({ error: "Invalid product id" }, { status: 400 });
     }
 
     const { searchParams } = new URL(request.url);

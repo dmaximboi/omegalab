@@ -67,17 +67,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const products = await getPrisma().product.findMany({
       where: { isActive: true },
-      select: { slug: true, updatedAt: true },
+      select: { id: true, name: true, slug: true, updatedAt: true },
     });
 
-    productPages = products
-      .filter((p: typeof products[number]) => p.slug)
-      .map((product: typeof products[number]) => ({
-        url: `${BASE_URL}/catalogue/${product.slug}`,
+    const { ensureProductHasSlug } = await import("@/lib/product-slug");
+    productPages = [];
+    for (const product of products) {
+      const slug = await ensureProductHasSlug(getPrisma(), product);
+      productPages.push({
+        url: `${BASE_URL}/product/${slug}`,
         lastModified: product.updatedAt,
         changeFrequency: "weekly" as const,
         priority: 0.8,
-      }));
+      });
+    }
   } catch (error) {
     console.error("[SITEMAP] Failed to fetch products:", error);
   }

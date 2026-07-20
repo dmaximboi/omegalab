@@ -20,6 +20,7 @@ interface ProductImage {
 
 interface Product {
   id: string;
+  slug?: string | null;
   name: string;
   description: string;
   price: number;
@@ -42,14 +43,20 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     fetchProduct();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
   const fetchProduct = async () => {
     try {
-      const res = await fetch(`/api/products/${params.id}`);
+      const key = String(params.id || "");
+      const res = await fetch(`/api/products/${encodeURIComponent(key)}`);
       if (res.ok) {
         const data = await res.json();
         setProduct(data);
+        // Canonical URL uses slug — replace raw cuid in the address bar
+        if (data.slug && data.slug !== key) {
+          router.replace(`/product/${data.slug}`);
+        }
       } else {
         setError("Product not found");
       }
@@ -118,7 +125,7 @@ export default function ProductDetailPage() {
     const shareData = {
       title: product.name,
       text: `Check out ${product.name} for ₦${product.price.toLocaleString()}`,
-      url: `${window.location.origin}/product/${product.id}`,
+      url: `${window.location.origin}/product/${product.slug || product.id}`,
     };
 
     try {
@@ -191,7 +198,7 @@ export default function ProductDetailPage() {
               {currentImage ? (
                 <Image
                   src={currentImage.url}
-                  alt={product.name}
+                  alt={product.slug || product.name}
                   fill
                   className="object-cover"
                   priority
@@ -243,7 +250,7 @@ export default function ProductDetailPage() {
                   >
                     <Image
                       src={image.url}
-                      alt={`${product.name} ${index + 1}`}
+                      alt={`${product.slug || product.name}-${index + 1}`}
                       fill
                       className="object-cover"
                     />

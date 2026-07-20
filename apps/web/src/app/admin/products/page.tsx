@@ -19,6 +19,7 @@ export const dynamic = "force-dynamic";
 
 interface Product {
   id: string;
+  slug?: string | null;
   name: string;
   description: string;
   price: number;
@@ -200,7 +201,7 @@ export default function AdminProductsPage() {
                   </p>
                   <div className="flex gap-2 mt-4">
                     <Link
-                      href={`/product/${product.id}`}
+                      href={`/product/${product.slug || product.id}`}
                       className="flex-1 flex items-center justify-center gap-1 py-2 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm dark:text-gray-300"
                     >
                       <Eye size={16} />

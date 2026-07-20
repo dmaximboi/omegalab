@@ -7,6 +7,16 @@ import { ProductImageUploader } from "@/components/admin/ProductImageUploader";
 
 export const dynamic = "force-dynamic";
 
+function slugifyPreview(input: string): string {
+  return (
+    input
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
+      .slice(0, 80) || ""
+  );
+}
+
 export default function NewProductPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -106,7 +116,17 @@ export default function NewProductPage() {
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => {
+                const name = e.target.value;
+                setFormData((prev) => ({
+                  ...prev,
+                  name,
+                  // Auto-suggest slug from name while creating (admin can still edit)
+                  slug: prev.slug && prev.slug !== slugifyPreview(prev.name)
+                    ? prev.slug
+                    : slugifyPreview(name),
+                }));
+              }}
               required
               className={fieldClass}
               placeholder="Enter product name"

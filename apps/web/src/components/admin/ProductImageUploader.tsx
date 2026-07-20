@@ -41,7 +41,10 @@ const ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
 const MAX_BYTES = 4 * 1024 * 1024;
 
 function newClientId() {
-  return `img_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  return `img_${hex}`;
 }
 
 export function ProductImageUploader({

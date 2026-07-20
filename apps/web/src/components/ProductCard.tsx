@@ -8,6 +8,7 @@ import { cart } from "@/lib/cart";
 
 interface Product {
   id: string;
+  slug?: string | null;
   name: string;
   description: string;
   price: number;
@@ -82,7 +83,7 @@ export function ProductCard({ product }: { product: Product }) {
       {/* Actions */}
       <div className="flex gap-2 mt-4">
         <Link
-          href={`/product/${product.id}`}
+          href={`/product/${product.slug || product.id}`}
           className="btn btn-outline flex-1 text-sm"
         >
           <Eye size={16} />

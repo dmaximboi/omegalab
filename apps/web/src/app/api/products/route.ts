@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { ensureProductHasSlug } from "@/lib/product-slug";
 
-// Cache for 5 minutes on CDN, 10 minutes on browser, stale for 30 minutes
 export const dynamic = "force-dynamic";
-export const revalidate = 300; // 5 minutes
+export const revalidate = 300;
 
-// Lazy Prisma client - only instantiated when first accessed
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
 function getPrisma() {
@@ -24,7 +23,8 @@ function getPrisma() {
 
 export async function GET() {
   try {
-    const products = await getPrisma().product.findMany({
+    const prisma = getPrisma();
+    const products = await prisma.product.findMany({
       where: { isActive: true },
       include: {
         images: {
@@ -34,26 +34,31 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    // Transform to match frontend expected format
-    const transformedProducts = products.map((product: typeof products[number]) => ({
-      id: product.id,
-      slug: product.slug,
-      name: product.name,
-      description: product.description,
-      price: parseFloat(product.price.toString()),
-      category: product.category,
-      image: product.images[0]?.url || "", // Use first image as main image
-      images: product.images.map((img: typeof product.images[number]) => img.url),
-    }));
+    const transformedProducts = [];
+    for (const product of products) {
+      const slug = await ensureProductHasSlug(prisma, product);
+      transformedProducts.push({
+        id: product.id,
+        slug,
+        name: product.name,
+        description: product.description,
+        price: parseFloat(product.price.toString()),
+        category: product.category,
+        image: product.images[0]?.url || "",
+        images: product.images.map((img) => img.url),
+      });
+    }
 
-    return NextResponse.json({ products: transformedProducts }, {
-      headers: {
-        "Cache-Control": "public, max-age=300, s-maxage=600, stale-while-revalidate=1800",
-      },
-    });
+    return NextResponse.json(
+      { products: transformedProducts },
+      {
+        headers: {
+          "Cache-Control": "public, max-age=300, s-maxage=600, stale-while-revalidate=1800",
+        },
+      }
+    );
   } catch (error) {
     console.error("[PRODUCTS] Fetch error:", error);
-    // Return empty products array instead of 500 to avoid breaking the UI
     return NextResponse.json({ products: [] }, { status: 200 });
   }
 }

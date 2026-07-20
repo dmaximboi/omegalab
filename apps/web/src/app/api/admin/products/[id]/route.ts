@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
 import { utapi } from "@/lib/uploadthing";
 import { extractUploadThingKeys } from "@/lib/uploadthing-url";
+import { ensureUniqueProductSlug, slugifyName, looksLikeProductId, ensureProductHasSlug } from "@/lib/product-slug";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,12 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const product = await getPrisma().product.findUnique({
+    if (!looksLikeProductId(params.id)) {
+      return NextResponse.json({ error: "Invalid product id" }, { status: 400 });
+    }
+
+    const prisma = getPrisma();
+    const product = await prisma.product.findUnique({
       where: { id: params.id },
       include: {
         images: {
@@ -47,8 +53,11 @@ export async function GET(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
+    const slug = await ensureProductHasSlug(prisma, product);
+
     return NextResponse.json({
       ...product,
+      slug,
       price: parseFloat(product.price.toString()),
     });
   } catch (error) {
@@ -68,6 +77,10 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    if (!looksLikeProductId(params.id)) {
+      return NextResponse.json({ error: "Invalid product id" }, { status: 400 });
+    }
+
     const body = await request.json();
     const { name, slug, description, price, category, isActive } = body;
 
@@ -80,23 +93,31 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid price" }, { status: 400 });
     }
 
+    const prisma = getPrisma();
+    const existing = await prisma.product.findUnique({
+      where: { id: params.id },
+      select: { id: true, slug: true, name: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    const slugSource =
+      typeof slug === "string" && slug.trim().length > 0
+        ? slugifyName(slug)
+        : existing.slug || slugifyName(String(name));
+    const uniqueSlug = await ensureUniqueProductSlug(prisma, slugSource, params.id);
+
     const updateData: Record<string, unknown> = {
       name: String(name).slice(0, 200),
       description: String(description ?? "").slice(0, 5000),
       price: parsedPrice,
       category: String(category).slice(0, 100),
       isActive: Boolean(isActive),
+      slug: uniqueSlug,
     };
 
-    if (slug) {
-      updateData.slug = String(slug)
-        .toLowerCase()
-        .replace(/[^a-z0-9-]/g, "-")
-        .replace(/(^-|-$)/g, "")
-        .slice(0, 120);
-    }
-
-    const product = await getPrisma().product.update({
+    const product = await prisma.product.update({
       where: { id: params.id },
       data: updateData,
       include: {
@@ -107,13 +128,19 @@ export async function PATCH(
     });
 
     if (session.user.id) {
-      await getPrisma()
-        .auditLog.create({
+      await prisma.auditLog
+        .create({
           data: {
             adminId: session.user.id,
             action: "PRODUCT_UPDATED",
             entityId: params.id,
-            newValue: JSON.stringify({ name, price: parsedPrice, category, isActive }),
+            newValue: JSON.stringify({
+              name,
+              price: parsedPrice,
+              category,
+              isActive,
+              slug: uniqueSlug,
+            }),
             ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown",
             userAgent: request.headers.get("user-agent")?.slice(0, 500) || "unknown",
           },
@@ -140,6 +167,10 @@ export async function DELETE(
 
     if (!session?.user?.isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (!looksLikeProductId(params.id)) {
+      return NextResponse.json({ error: "Invalid product id" }, { status: 400 });
     }
 
     const product = await getPrisma().product.findUnique({
