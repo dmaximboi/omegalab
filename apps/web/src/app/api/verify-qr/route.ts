@@ -95,7 +95,8 @@ export async function GET(request: NextRequest) {
       verified: true,
       order: {
         orderNumber: order.txRef,
-        customerName: order.user?.name || "Customer",
+        customerName: order.customerName || order.user?.name || "Customer",
+        customerEmail: order.customerEmail || undefined,
         date: order.createdAt.toLocaleDateString("en-NG", {
           day: "numeric",
           month: "long",

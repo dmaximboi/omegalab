@@ -73,16 +73,22 @@ export async function GET(
     }
 
     // Only expose fields needed by the frontend — never leak paymentToken or receiptSalt
+    const customer = {
+      name: order.customerName || order.user?.name || "Customer",
+      email: order.customerEmail || order.user?.email || "",
+      phone: order.customerPhone || "",
+    };
+
     return NextResponse.json({
       id: order.id,
       totalAmount: Number(order.totalAmount),
       status: order.status,
       txRef: order.txRef,
-      userEmail: (order as any).user?.email,
-      userName: (order as any).user?.name,
-      userPhone: (order as any).phone,
+      userEmail: customer.email,
+      userName: customer.name,
+      userPhone: customer.phone,
       createdAt: order.createdAt.toISOString(),
-      items: order.items.map((item: any) => ({
+      items: order.items.map((item: (typeof order.items)[number]) => ({
         id: item.id,
         quantity: item.quantity,
         unitPrice: Number(item.unitPrice),

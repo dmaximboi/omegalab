@@ -81,8 +81,14 @@ export async function GET(request: Request) {
       ipAddress: order.ipAddress,
       userAgent: order.userAgent,
       customer: {
-        name: order.user.name,
-        email: order.user.email,
+        name: order.customerName || order.user.name,
+        email: order.customerEmail || order.user.email,
+      },
+      customerSnapshot: {
+        name: order.customerName,
+        email: order.customerEmail,
+        phone: order.customerPhone,
+        address: order.customerAddress,
       },
       items: order.items.map((item: typeof order.items[number]) => ({
         product: item.product.name,

@@ -72,14 +72,20 @@ export async function GET(
         createdAt: order.createdAt,
         verifiedAt: order.verifiedAt,
         customer: {
-          name: order.user.name,
-          email: order.user.email,
-        },
-        items: order.items.map((item) => ({
-          product: item.product.name,
-          quantity: item.quantity,
-          unitPrice: parseFloat(item.unitPrice.toString()),
-        })),
+        name: order.customerName || order.user.name,
+        email: order.customerEmail || order.user.email,
+      },
+      customerSnapshot: {
+        name: order.customerName,
+        email: order.customerEmail,
+        phone: order.customerPhone,
+        address: order.customerAddress,
+      },
+      items: order.items.map((item) => ({
+        product: item.product.name,
+        quantity: item.quantity,
+        unitPrice: parseFloat(item.unitPrice.toString()),
+      })),
       },
       qrCode,
       verifyUrl,

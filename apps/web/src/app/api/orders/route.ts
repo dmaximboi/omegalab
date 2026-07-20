@@ -26,11 +26,12 @@ function getPrisma() {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_OPEN_ORDERS_PER_EMAIL = 3;
 
 /**
  * Guest or signed-in checkout.
- * - Signed-in: use session user
- * - Guest: require name, phone, address, email → upsert USER by email
+ * Buyer identity for THIS transaction is stored on the Order snapshot fields.
+ * Shared emails no longer overwrite User.name (avoids mixed-tx confusion).
  */
 export async function POST(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -62,13 +63,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Name, phone, and address are required" }, { status: 400 });
     }
 
-    const phoneClean = String(phone).replace(/\s+/g, "");
-    if (phoneClean.length < 10 || phoneClean.length > 15) {
+    const customerName = String(name).trim().slice(0, 120);
+    const customerPhone = String(phone).replace(/\s+/g, "").slice(0, 20);
+    const customerAddress = String(address).trim().slice(0, 500);
+
+    if (customerPhone.length < 10 || customerPhone.length > 15) {
       return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
     }
 
     const prisma = getPrisma();
     let orderUser: { id: string; email: string; name: string | null };
+    let customerEmail: string;
 
     if (session?.user?.id && session?.user?.email) {
       const sessionUser = await prisma.user.findUnique({
@@ -78,20 +83,20 @@ export async function POST(request: Request) {
       if (!sessionUser) {
         return NextResponse.json({ error: "User not found" }, { status: 401 });
       }
-      // Keep profile name fresh from checkout form when provided
-      if (name && name !== sessionUser.name) {
+      // Signed-in users may update their own profile name
+      if (customerName && customerName !== sessionUser.name) {
         await prisma.user
-          .update({ where: { id: sessionUser.id }, data: { name: String(name).slice(0, 120) } })
+          .update({ where: { id: sessionUser.id }, data: { name: customerName } })
           .catch(() => {});
       }
-      orderUser = { ...sessionUser, name: String(name).slice(0, 120) || sessionUser.name };
+      orderUser = sessionUser;
+      customerEmail = sessionUser.email;
     } else {
-      // Guest checkout — email required
-      const email = String(bodyEmail || "")
+      customerEmail = String(bodyEmail || "")
         .trim()
         .toLowerCase()
         .slice(0, 190);
-      if (!email || !EMAIL_RE.test(email)) {
+      if (!customerEmail || !EMAIL_RE.test(customerEmail)) {
         return NextResponse.json(
           { error: "A valid email is required to place an order" },
           { status: 400 }
@@ -99,34 +104,24 @@ export async function POST(request: Request) {
       }
 
       const existing = await prisma.user.findUnique({
-        where: { email },
+        where: { email: customerEmail },
         select: { id: true, email: true, name: true, role: true },
       });
 
       if (existing) {
-        // Never elevate; guests cannot attach to admin accounts via email spoof
         if (existing.role === Role.ADMIN) {
           return NextResponse.json(
             { error: "Please sign in to place an order with this email" },
             { status: 401 }
           );
         }
-        await prisma.user
-          .update({
-            where: { id: existing.id },
-            data: { name: String(name).slice(0, 120) },
-          })
-          .catch(() => {});
-        orderUser = {
-          id: existing.id,
-          email: existing.email,
-          name: String(name).slice(0, 120),
-        };
+        // Do NOT overwrite existing.user.name — order snapshot holds this buyer's details
+        orderUser = existing;
       } else {
         orderUser = await prisma.user.create({
           data: {
-            email,
-            name: String(name).slice(0, 120),
+            email: customerEmail,
+            name: customerName,
             role: Role.USER,
           },
           select: { id: true, email: true, name: true },
@@ -181,9 +176,18 @@ export async function POST(request: Request) {
     const paymentToken = crypto.randomBytes(32).toString("hex");
     const tokenExpiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000);
 
+    const snapshot = {
+      customerName,
+      customerEmail,
+      customerPhone,
+      customerAddress,
+    };
+
+    // Idempotency: same user + same cart total + same snapshot email within 5 min
     const recentOrder = await prisma.order.findFirst({
       where: {
         userId: orderUser.id,
+        customerEmail,
         status: OrderStatus.INITIATED,
         createdAt: { gte: new Date(Date.now() - 5 * 60 * 1000) },
         totalAmount: totalAsNumber,
@@ -191,12 +195,21 @@ export async function POST(request: Request) {
     });
 
     if (recentOrder) {
+      // Refresh snapshot on the reused order so this checkout's details win
+      await prisma.order
+        .update({
+          where: { id: recentOrder.id },
+          data: snapshot,
+        })
+        .catch(() => {});
+
       const response = NextResponse.json({
         orderId: recentOrder.id,
         txRef: recentOrder.txRef,
         amount: totalAsNumber,
-        userEmail: orderUser.email,
-        userName: orderUser.name,
+        userEmail: customerEmail,
+        userName: customerName,
+        userPhone: customerPhone,
       });
       if (recentOrder.paymentToken) {
         response.cookies.set("payment_token", recentOrder.paymentToken, {
@@ -208,6 +221,24 @@ export async function POST(request: Request) {
         });
       }
       return response;
+    }
+
+    // Limit unfinished checkouts sharing one email (after idempotency reuse)
+    const openCount = await prisma.order.count({
+      where: {
+        customerEmail,
+        status: { in: [OrderStatus.INITIATED, OrderStatus.PROCESSING, OrderStatus.VERIFYING] },
+        createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+      },
+    });
+    if (openCount >= MAX_OPEN_ORDERS_PER_EMAIL) {
+      return NextResponse.json(
+        {
+          error:
+            "You already have open checkouts with this email. Complete or wait for them to expire before starting another.",
+        },
+        { status: 429 }
+      );
     }
 
     const { hash: receiptHash, salt: receiptSalt } = generateReceiptHash(txRef, txRef);
@@ -224,6 +255,7 @@ export async function POST(request: Request) {
         userAgent,
         paymentToken,
         tokenExpiresAt,
+        ...snapshot,
         items: {
           create: orderItems,
         },
@@ -235,6 +267,7 @@ export async function POST(request: Request) {
       total: totalAsNumber,
       userId: orderUser.id,
       guest: !session?.user?.id,
+      customerEmail,
     });
 
     console.log("[ORDER] Step 1 INITIATED:", order.id, "txRef:", txRef, "amount:", totalAsNumber);
@@ -243,8 +276,9 @@ export async function POST(request: Request) {
       orderId: order.id,
       txRef,
       amount: totalAsNumber,
-      userEmail: orderUser.email,
-      userName: orderUser.name,
+      userEmail: customerEmail,
+      userName: customerName,
+      userPhone: customerPhone,
     });
 
     response.cookies.set("payment_token", paymentToken, {

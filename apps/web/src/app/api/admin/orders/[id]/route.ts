@@ -111,8 +111,11 @@ export async function GET(
       },
       customer: {
         id: order.user.id,
-        name: order.user.name,
-        email: order.user.email,
+        name: order.customerName || order.user.name,
+        email: order.customerEmail || order.user.email,
+        phone: order.customerPhone || null,
+        address: order.customerAddress || null,
+        accountEmail: order.user.email,
         memberSince: order.user.createdAt,
       },
       items: order.items.map((item: typeof order.items[number]) => ({

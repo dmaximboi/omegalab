@@ -92,6 +92,11 @@ model Order {
   paymentVerified Boolean     @default(false)
   verifiedAt      DateTime?
   verifiedBy      String?
+  // Per-transaction buyer snapshot (avoids mixed identity when email is shared)
+  customerName    String?
+  customerEmail   String?
+  customerPhone   String?
+  customerAddress String?
   ipAddress       String?
   userAgent       String?
   paymentToken    String?     @unique // Anti-duplication token
@@ -102,6 +107,7 @@ model Order {
   @@index([userId])
   @@index([status, createdAt])
   @@index([ipAddress, createdAt])
+  @@index([customerEmail, createdAt])
 }
 
 model OrderItem {
