@@ -30,7 +30,7 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
     await getPrisma().contactMessage.delete({

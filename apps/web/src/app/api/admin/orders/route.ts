@@ -26,7 +26,7 @@ export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
     const { searchParams } = new URL(request.url);

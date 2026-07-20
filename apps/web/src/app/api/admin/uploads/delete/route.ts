@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
     const forwarded = request.headers.get("x-forwarded-for");

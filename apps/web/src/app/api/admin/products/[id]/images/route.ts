@@ -33,7 +33,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
     if (!looksLikeProductId(params.id)) {
@@ -96,7 +96,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
     if (!looksLikeProductId(params.id)) {

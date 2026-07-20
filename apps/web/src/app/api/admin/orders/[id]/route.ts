@@ -27,9 +27,9 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    // README rule: admin routes return 403 not 401 (no info leakage about resource existence)
+    // Non-admins get 404 — do not reveal that admin APIs exist
     if (!session?.user?.isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
     const order = await getPrisma().order.findUnique({

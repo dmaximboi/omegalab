@@ -223,8 +223,11 @@ export const authOptions: NextAuthOptions = {
           }
         } catch (error) {
           console.error("[AUTH] Failed to check admin status:", error);
-          // Fail closed: never retain admin privileges when role re-check fails
-          token.isAdmin = false;
+          // Transient DB errors must NOT wipe a previously verified admin session
+          // (fail closed only when we have never successfully checked role)
+          if (token.roleCheckedAt === undefined) {
+            token.isAdmin = false;
+          }
         }
       }
 
