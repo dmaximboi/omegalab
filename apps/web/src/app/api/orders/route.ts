@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { PrismaClient, OrderStatus } from "@prisma/client";
+import { PrismaClient, OrderStatus, Role } from "@prisma/client";
 import Decimal from "decimal.js";
 import { generateTxRef, generateReceiptHash } from "@/lib/flutterwave";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import crypto from "crypto";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-// Lazy Prisma client - only instantiated when first accessed
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
 function getPrisma() {
@@ -25,33 +25,30 @@ function getPrisma() {
   return globalForPrisma.prisma;
 }
 
-/**
- * Transaction State Machine — 5 steps:
- * 1. INITIATED  — Order created, awaiting payment gateway
- * 2. PROCESSING — Payment started (Flutterwave checkout opened)
- * 3. VERIFYING  — Server is verifying with Flutterwave API
- * 4. PAID       — Payment verified and confirmed
- * 5. FAILED     — Payment failed or verification failed
- *
- * Logged in PaymentLog with step field for auditability
- */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * Guest or signed-in checkout.
+ * - Signed-in: use session user
+ * - Guest: require name, phone, address, email → upsert USER by email
+ */
 export async function POST(request: Request) {
-  // Capture IP and User-Agent upfront
   const forwarded = request.headers.get("x-forwarded-for");
   const ipAddress = forwarded?.split(",")[0]?.trim() || "unknown";
   const userAgent = request.headers.get("user-agent")?.slice(0, 500) || "unknown";
 
   try {
-    // Require authenticated user — email comes from session, not form
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id || !session?.user?.email) {
-      return NextResponse.json({ error: "Please sign in to place an order" }, { status: 401 });
+    const rate = await checkRateLimit(`orders:${ipAddress}`, 10, 60000, 10 * 60 * 1000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Too many order attempts. Please try again later." },
+        { status: 429 }
+      );
     }
 
+    const session = await getServerSession(authOptions);
     const body = await request.json();
-    const { items, name, phone, address } = body;
-    // NOTE: we intentionally ignore frontend "total" — server computes it
+    const { items, name, phone, address, email: bodyEmail } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
@@ -62,19 +59,85 @@ export async function POST(request: Request) {
     }
 
     if (!name || !phone || !address) {
-      return NextResponse.json({ error: "All fields are required" }, { status: 400 });
+      return NextResponse.json({ error: "Name, phone, and address are required" }, { status: 400 });
     }
 
-    // Validate phone (basic)
-    if (phone.length < 10 || phone.length > 15) {
+    const phoneClean = String(phone).replace(/\s+/g, "");
+    if (phoneClean.length < 10 || phoneClean.length > 15) {
       return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
     }
 
-    // Extract product IDs and validate they exist + are active
-    const productIds: string[] = items.map((item: any) => String(item.id));
+    const prisma = getPrisma();
+    let orderUser: { id: string; email: string; name: string | null };
+
+    if (session?.user?.id && session?.user?.email) {
+      const sessionUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { id: true, email: true, name: true },
+      });
+      if (!sessionUser) {
+        return NextResponse.json({ error: "User not found" }, { status: 401 });
+      }
+      // Keep profile name fresh from checkout form when provided
+      if (name && name !== sessionUser.name) {
+        await prisma.user
+          .update({ where: { id: sessionUser.id }, data: { name: String(name).slice(0, 120) } })
+          .catch(() => {});
+      }
+      orderUser = { ...sessionUser, name: String(name).slice(0, 120) || sessionUser.name };
+    } else {
+      // Guest checkout — email required
+      const email = String(bodyEmail || "")
+        .trim()
+        .toLowerCase()
+        .slice(0, 190);
+      if (!email || !EMAIL_RE.test(email)) {
+        return NextResponse.json(
+          { error: "A valid email is required to place an order" },
+          { status: 400 }
+        );
+      }
+
+      const existing = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, email: true, name: true, role: true },
+      });
+
+      if (existing) {
+        // Never elevate; guests cannot attach to admin accounts via email spoof
+        if (existing.role === Role.ADMIN) {
+          return NextResponse.json(
+            { error: "Please sign in to place an order with this email" },
+            { status: 401 }
+          );
+        }
+        await prisma.user
+          .update({
+            where: { id: existing.id },
+            data: { name: String(name).slice(0, 120) },
+          })
+          .catch(() => {});
+        orderUser = {
+          id: existing.id,
+          email: existing.email,
+          name: String(name).slice(0, 120),
+        };
+      } else {
+        orderUser = await prisma.user.create({
+          data: {
+            email,
+            name: String(name).slice(0, 120),
+            role: Role.USER,
+          },
+          select: { id: true, email: true, name: true },
+        });
+      }
+    }
+
+    const productIds: string[] = items.map((item: { id: unknown }) => String(item.id));
     const uniqueIds = Array.from(new Set(productIds));
 
-    const products = await getPrisma().product.findMany({
+    const products = await prisma.product.findMany({
       where: {
         id: { in: uniqueIds },
         isActive: true,
@@ -86,11 +149,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Some products are unavailable" }, { status: 400 });
     }
 
-    // Build a price lookup from DB — NEVER trust frontend prices
-    // Using Decimal.js for precision (no floating point errors on money)
-    const priceMap = new Map<string, Decimal>(products.map((p: typeof products[number]) => [p.id, new Decimal(p.price.toString())]));
+    const priceMap = new Map<string, Decimal>(
+      products.map((p) => [p.id, new Decimal(p.price.toString())])
+    );
 
-    // Compute server-side total with Decimal.js
     let serverTotal = new Decimal(0);
     const orderItems: { productId: string; quantity: number; unitPrice: number }[] = [];
 
@@ -102,9 +164,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Invalid item in cart" }, { status: 400 });
       }
 
-      const lineTotal = dbPrice.times(quantity);
-      serverTotal = serverTotal.plus(lineTotal);
-
+      serverTotal = serverTotal.plus(dbPrice.times(quantity));
       orderItems.push({
         productId: String(item.id),
         quantity,
@@ -116,27 +176,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid order total" }, { status: 400 });
     }
 
-    // Convert to number for DB (Prisma Decimal accepts number/string)
     const totalAsNumber = serverTotal.toDecimalPlaces(2).toNumber();
-
-    // Generate cryptographically secure identifiers
     const txRef = generateTxRef();
-    const paymentToken = crypto.randomBytes(32).toString('hex');
-    const tokenExpiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
+    const paymentToken = crypto.randomBytes(32).toString("hex");
+    const tokenExpiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000);
 
-    // Use the authenticated user directly
-    const sessionUser = await getPrisma().user.findUnique({
-      where: { id: session.user.id },
-    });
-
-    if (!sessionUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 401 });
-    }
-
-    // Idempotency: same user + amount with INITIATED order in last 5 min (never IP-only)
-    const recentOrder = await getPrisma().order.findFirst({
+    const recentOrder = await prisma.order.findFirst({
       where: {
-        userId: sessionUser.id,
+        userId: orderUser.id,
         status: OrderStatus.INITIATED,
         createdAt: { gte: new Date(Date.now() - 5 * 60 * 1000) },
         totalAmount: totalAsNumber,
@@ -144,13 +191,12 @@ export async function POST(request: Request) {
     });
 
     if (recentOrder) {
-      // Reuse order — payment token stays httpOnly cookie only (never JSON)
       const response = NextResponse.json({
         orderId: recentOrder.id,
         txRef: recentOrder.txRef,
         amount: totalAsNumber,
-        userEmail: sessionUser.email,
-        userName: sessionUser.name,
+        userEmail: orderUser.email,
+        userName: orderUser.name,
       });
       if (recentOrder.paymentToken) {
         response.cookies.set("payment_token", recentOrder.paymentToken, {
@@ -164,14 +210,11 @@ export async function POST(request: Request) {
       return response;
     }
 
-    // Generate HMAC receipt hash with salt (orderId not available yet, use txRef as unique identifier)
     const { hash: receiptHash, salt: receiptSalt } = generateReceiptHash(txRef, txRef);
-    // Note: txRef is unique per order and used as the orderId component since order hasn't been created yet
 
-    // STEP 1: INITIATED — Create order in database
-    const order = await getPrisma().order.create({
+    const order = await prisma.order.create({
       data: {
-        userId: sessionUser.id,
+        userId: orderUser.id,
         totalAmount: totalAsNumber,
         receiptHash,
         receiptSalt,
@@ -187,56 +230,54 @@ export async function POST(request: Request) {
       },
     });
 
-    // Log Step 1
     await logTransactionStep(order.id, txRef, "INITIATED", ipAddress, {
       itemCount: orderItems.length,
       total: totalAsNumber,
-      userId: sessionUser.id,
+      userId: orderUser.id,
+      guest: !session?.user?.id,
     });
 
     console.log("[ORDER] Step 1 INITIATED:", order.id, "txRef:", txRef, "amount:", totalAsNumber);
 
-    // Set httpOnly cookie with payment token instead of returning in JSON
     const response = NextResponse.json({
       orderId: order.id,
       txRef,
       amount: totalAsNumber,
-      userEmail: sessionUser.email,
-      userName: sessionUser.name,
+      userEmail: orderUser.email,
+      userName: orderUser.name,
     });
-    
-    // Set httpOnly cookie for payment token (XSS-safe)
-    response.cookies.set("payment_token", (order as any).paymentToken, {
+
+    response.cookies.set("payment_token", paymentToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60, // 1 hour
+      maxAge: 60 * 60,
       path: "/",
     });
-    
+
     return response;
-  } catch (error: any) {
-    console.error("[ORDER] Create error:", error?.message || error);
-    console.error("[ORDER] Stack:", error?.stack);
-    
-    // Provide more specific error messages for known issues
-    const message = error?.code === "P2002"
-      ? "Duplicate order detected. Please try again."
-      : error?.code === "P1001" || error?.code === "P1002"
-        ? "Database connection failed. Please try again in a moment."
-        : "Could not create order. Please try again.";
-    
+  } catch (error: unknown) {
+    const err = error as { message?: string; stack?: string; code?: string };
+    console.error("[ORDER] Create error:", err?.message || error);
+    console.error("[ORDER] Stack:", err?.stack);
+
+    const message =
+      err?.code === "P2002"
+        ? "Duplicate order detected. Please try again."
+        : err?.code === "P1001" || err?.code === "P1002"
+          ? "Database connection failed. Please try again in a moment."
+          : "Could not create order. Please try again.";
+
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-// Log each transaction step for admin visibility
 async function logTransactionStep(
   orderId: string,
   txRef: string,
   step: string,
   ipAddress: string,
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
 ) {
   try {
     await getPrisma().paymentLog.create({

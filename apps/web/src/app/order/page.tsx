@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Navbar } from "@/components/Navbar";
 import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Loader2 } from "lucide-react";
 import { cart, CartItem } from "@/lib/cart";
@@ -15,6 +16,7 @@ declare global {
 }
 
 export default function OrderPage() {
+  const { data: session } = useSession();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState(false);
@@ -24,30 +26,31 @@ export default function OrderPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
+    email: "",
     phone: "",
     address: "",
   });
 
-  // Load cart and form data from localStorage on mount
   useEffect(() => {
-    const savedItems = cart.getItems();
-    setItems(savedItems);
-    
-    // Load saved form data
-    const savedFormData = localStorage.getItem("checkout_form");
-    if (savedFormData) {
-      try {
-        const parsed = JSON.parse(savedFormData);
-        setFormData(parsed);
-      } catch {
-        // Ignore parse errors
-      }
-    }
-    
-    setLoading(false);
-  }, []);
+    setItems(cart.getItems());
 
-  // Save form data to localStorage on change
+    let parsed: Partial<typeof formData> = {};
+    try {
+      const saved = localStorage.getItem("checkout_form");
+      if (saved) parsed = JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+
+    setFormData({
+      name: parsed.name || session?.user?.name || "",
+      email: parsed.email || session?.user?.email || "",
+      phone: parsed.phone || "",
+      address: parsed.address || "",
+    });
+    setLoading(false);
+  }, [session?.user?.name, session?.user?.email]);
+
   useEffect(() => {
     if (!loading) {
       localStorage.setItem("checkout_form", JSON.stringify(formData));
@@ -57,8 +60,7 @@ export default function OrderPage() {
   const handleQuantityChange = (id: string, delta: number) => {
     const item = items.find((i) => i.id === id);
     if (item) {
-      const newQuantity = Math.max(1, item.quantity + delta);
-      cart.updateQuantity(id, newQuantity);
+      cart.updateQuantity(id, Math.max(1, item.quantity + delta));
       setItems(cart.getItems());
       window.dispatchEvent(new Event("storage"));
     }
@@ -78,7 +80,6 @@ export default function OrderPage() {
     setError("");
 
     try {
-      // Create order in backend first
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -94,8 +95,6 @@ export default function OrderPage() {
       }
 
       const data = await res.json();
-
-      // Payment token is set as httpOnly cookie by the API — never store in localStorage
       router.push(`/payment/${data.orderId}`);
     } catch (err: any) {
       setError(err.message || "Could not create order. Please try again.");
@@ -127,7 +126,20 @@ export default function OrderPage() {
       <Navbar />
       <main className="min-h-screen bg-light-grey dark:bg-gray-900">
         <div className="container py-8">
-          <h1 className="page-title mb-8">Your Order</h1>
+          <h1 className="page-title mb-2">Your Order</h1>
+          <p className="text-navy/60 dark:text-gray-400 mb-8 text-sm">
+            No account required — enter your details and pay securely.
+            {!session?.user && (
+              <>
+                {" "}
+                Optional:{" "}
+                <Link href="/login?callbackUrl=/order" className="text-sky hover:underline">
+                  sign in with Google
+                </Link>{" "}
+                to save your details.
+              </>
+            )}
+          </p>
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg text-sm">
@@ -148,7 +160,6 @@ export default function OrderPage() {
             </div>
           ) : (
             <div className="grid lg:grid-cols-3 gap-8">
-              {/* Cart Items */}
               <div className="lg:col-span-2 space-y-4">
                 {items.map((item) => (
                   <div
@@ -157,27 +168,20 @@ export default function OrderPage() {
                   >
                     <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
                       {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">
                           No image
                         </div>
                       )}
                     </div>
-
                     <div className="flex-1">
                       <h3 className="font-semibold text-navy dark:text-white mb-1">{item.name}</h3>
-                      <p className="text-sky font-semibold mb-2">
-                        ₦{item.price.toLocaleString()}
-                      </p>
-
+                      <p className="text-sky font-semibold mb-2">₦{item.price.toLocaleString()}</p>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2 border dark:border-gray-700 rounded-lg">
                           <button
+                            type="button"
                             onClick={() => handleQuantityChange(item.id, -1)}
                             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                           >
@@ -187,14 +191,15 @@ export default function OrderPage() {
                             {item.quantity}
                           </span>
                           <button
+                            type="button"
                             onClick={() => handleQuantityChange(item.id, 1)}
                             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                           >
                             <Plus size={16} />
                           </button>
                         </div>
-
                         <button
+                          type="button"
                           onClick={() => handleRemove(item.id)}
                           className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
                         >
@@ -202,7 +207,6 @@ export default function OrderPage() {
                         </button>
                       </div>
                     </div>
-
                     <div className="text-right">
                       <p className="font-semibold text-navy dark:text-white">
                         ₦{(item.price * item.quantity).toLocaleString()}
@@ -212,16 +216,13 @@ export default function OrderPage() {
                 ))}
               </div>
 
-              {/* Checkout Form */}
               <div className="space-y-6">
                 <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-6">
                   <h2 className="text-lg font-semibold mb-4 dark:text-white">Order Summary</h2>
                   <div className="space-y-3 mb-6">
                     <div className="flex justify-between text-sm">
                       <span className="text-navy/60 dark:text-gray-400">Subtotal</span>
-                      <span className="font-medium dark:text-white">
-                        ₦{total.toLocaleString()}
-                      </span>
+                      <span className="font-medium dark:text-white">₦{total.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-navy/60 dark:text-gray-400">Delivery</span>
@@ -230,9 +231,7 @@ export default function OrderPage() {
                     <div className="border-t dark:border-gray-700 pt-3">
                       <div className="flex justify-between">
                         <span className="font-semibold dark:text-white">Total</span>
-                        <span className="text-xl font-bold text-sky">
-                          ₦{total.toLocaleString()}
-                        </span>
+                        <span className="text-xl font-bold text-sky">₦{total.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -251,7 +250,20 @@ export default function OrderPage() {
                         placeholder="Your full name"
                       />
                     </div>
-
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className="input w-full"
+                        placeholder="you@example.com"
+                        readOnly={Boolean(session?.user?.email)}
+                      />
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                         Phone *
@@ -265,7 +277,6 @@ export default function OrderPage() {
                         placeholder="+234 XXX XXX XXXX"
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                         Delivery Address *
@@ -279,7 +290,6 @@ export default function OrderPage() {
                         placeholder="Your delivery address"
                       />
                     </div>
-
                     <button
                       type="submit"
                       disabled={checkingOut}

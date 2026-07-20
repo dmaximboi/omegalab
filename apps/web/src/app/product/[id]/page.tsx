@@ -1,165 +1,82 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
-import { 
-  ArrowLeft, Loader2, ChevronLeft, ChevronRight,
-  Package, ShoppingCart, Share2, Check 
-} from "lucide-react";
-import { cart } from "@/lib/cart";
+import { permanentRedirect } from "next/navigation";
+import { Package } from "lucide-react";
+import { ProductDetailClient } from "@/components/ProductDetailClient";
+import { getPublicProductByKey } from "@/lib/public-product";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
-interface ProductImage {
-  id: string;
-  url: string;
-  order: number;
-}
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://omegalabaffairs.com";
 
-interface Product {
-  id: string;
-  slug?: string | null;
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  isActive: boolean;
-  images: ProductImage[];
-}
+type PageProps = { params: { id: string } };
 
-export default function ProductDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [error, setError] = useState("");
-  const [addedToCart, setAddedToCart] = useState(false);
-  const [addingToCart, setAddingToCart] = useState(false);
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
-
-  useEffect(() => {
-    fetchProduct();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id]);
-
-  const fetchProduct = async () => {
-    try {
-      const key = String(params.id || "");
-      const res = await fetch(`/api/products/${encodeURIComponent(key)}`);
-      if (res.ok) {
-        const data = await res.json();
-        setProduct(data);
-        // Canonical URL uses slug — replace raw cuid in the address bar
-        if (data.slug && data.slug !== key) {
-          router.replace(`/product/${data.slug}`);
-        }
-      } else {
-        setError("Product not found");
-      }
-    } catch (error) {
-      setError("Failed to load product");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const nextImage = () => {
-    if (product && product.images && product.images.length > 0) {
-      setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
-    }
-  };
-
-  const prevImage = () => {
-    if (product && product.images && product.images.length > 0) {
-      setCurrentImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length);
-    }
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    
-    const distance = touchStart - touchEnd;
-    const minSwipeDistance = 50;
-
-    if (distance > minSwipeDistance) {
-      nextImage();
-    } else if (distance < -minSwipeDistance) {
-      prevImage();
-    }
-  };
-
-  const addToCart = () => {
-    if (!product || !product.images || product.images.length === 0) return;
-    
-    setAddingToCart(true);
-    cart.addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.images[0].url,
-    });
-    
-    // Trigger storage event to update navbar
-    window.dispatchEvent(new Event("storage"));
-    
-    setAddingToCart(false);
-    setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 2000);
-  };
-
-  const shareProduct = async () => {
-    if (!product) return;
-    
-    const shareData = {
-      title: product.name,
-      text: `Check out ${product.name} for ₦${product.price.toLocaleString()}`,
-      url: `${window.location.origin}/product/${product.slug || product.id}`,
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const product = await getPublicProductByKey(params.id);
+  if (!product) {
+    return {
+      title: "Product not found",
+      robots: { index: false, follow: false },
     };
-
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        // Fallback: copy to clipboard
-        await navigator.clipboard.writeText(shareData.url);
-        alert("Link copied to clipboard!");
-      }
-    } catch (error) {
-      console.error("Share failed:", error);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <Loader2 className="animate-spin text-blue-600" size={32} />
-      </div>
-    );
   }
 
-  if (error || !product) {
+  const title = `${product.name} | Buy in Nigeria`;
+  const description =
+    product.description?.slice(0, 160) ||
+    `Buy ${product.name} — ${product.category} from De-Omega Labaffairs. Laboratory, medical & chemical supplies in Nigeria.`;
+  const canonical = `${BASE_URL}/product/${product.slug}`;
+  const image = product.images[0]?.url || `${BASE_URL}/logo.png`;
+
+  return {
+    title,
+    description,
+    keywords: [
+      product.name,
+      product.category,
+      "buy laboratory equipment Nigeria",
+      "chemical laboratory supplies Nigeria",
+      "scientific instruments Nigeria",
+      "De-Omega Labaffairs",
+      "lab equipment Ilorin",
+    ],
+    alternates: { canonical },
+    openGraph: {
+      type: "website",
+      locale: "en_NG",
+      url: canonical,
+      siteName: "De-Omega Labaffairs",
+      title: `${product.name} | De-Omega Labaffairs Nigeria`,
+      description,
+      images: [{ url: image, alt: product.name }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.name} | De-Omega Labaffairs`,
+      description,
+      images: [image],
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+  };
+}
+
+export default async function ProductDetailPage({ params }: PageProps) {
+  const key = params.id;
+  const product = await getPublicProductByKey(key);
+
+  if (!product) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <Package className="mx-auto text-gray-300 dark:text-gray-600 mb-4" size={48} />
-          <p className="text-gray-500 dark:text-gray-400 mb-4">{error || "Product not found"}</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">Product not found</p>
           <Link
             href="/catalogue"
             className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
           >
-            <ArrowLeft size={18} />
             Back to Catalogue
           </Link>
         </div>
@@ -167,166 +84,56 @@ export default function ProductDetailPage() {
     );
   }
 
-  const currentImage = product.images && product.images.length > 0 ? product.images[currentImageIndex] : null;
+  // Canonicalise legacy cuid URLs to slug for crawlers and shared links
+  if (product.slug && product.slug !== key) {
+    permanentRedirect(`/product/${product.slug}`);
+  }
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description,
+    image: product.images.map((img) => img.url),
+    sku: product.slug,
+    category: product.category,
+    brand: {
+      "@type": "Brand",
+      name: "De-Omega Labaffairs",
+    },
+    offers: {
+      "@type": "Offer",
+      url: `${BASE_URL}/product/${product.slug}`,
+      priceCurrency: "NGN",
+      price: product.price.toFixed(2),
+      availability: product.isActive
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      seller: {
+        "@type": "Organization",
+        name: "De-Omega Labaffairs Nig. Ltd.",
+        url: BASE_URL,
+      },
+    },
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Product Details</h1>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Image Gallery */}
-          <div className="space-y-4">
-            <div className="relative aspect-square bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 overflow-hidden"
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            >
-              {currentImage ? (
-                <Image
-                  src={currentImage.url}
-                  alt={product.slug || product.name}
-                  fill
-                  className="object-cover"
-                  priority
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <Package className="text-gray-300 dark:text-gray-600" size={64} />
-                </div>
-              )}
-
-              {/* Navigation Arrows */}
-              {product.images && product.images.length > 1 && (
-                <>
-                  <button
-                    onClick={prevImage}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 dark:bg-gray-800/80 hover:bg-white dark:hover:bg-gray-700 rounded-full shadow-lg transition"
-                  >
-                    <ChevronLeft size={24} className="dark:text-white" />
-                  </button>
-                  <button
-                    onClick={nextImage}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 dark:bg-gray-800/80 hover:bg-white dark:hover:bg-gray-700 rounded-full shadow-lg transition"
-                  >
-                    <ChevronRight size={24} className="dark:text-white" />
-                  </button>
-                </>
-              )}
-
-              {/* Image Counter */}
-              {product.images && product.images.length > 1 && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/50 text-white text-sm rounded-full">
-                  {currentImageIndex + 1} / {product.images.length}
-                </div>
-              )}
-            </div>
-
-            {/* Thumbnail Strip */}
-            {product.images && product.images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {product.images.map((image, index) => (
-                  <button
-                    key={image.id}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition ${
-                      index === currentImageIndex
-                        ? "border-blue-600"
-                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500"
-                    }`}
-                  >
-                    <Image
-                      src={image.url}
-                      alt={`${product.slug || product.name}-${index + 1}`}
-                      fill
-                      className="object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Product Details */}
-          <div className="space-y-6">
-            <div>
-              <span className="inline-block px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm font-medium rounded-full mb-3">
-                {product.category}
-              </span>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{product.name}</h1>
-              <p className="text-3xl font-bold text-blue-600">
-                ₦{product.price.toLocaleString()}
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Description</h2>
-              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{product.description}</p>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={addToCart}
-                disabled={addingToCart}
-                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg transition ${
-                  addedToCart 
-                    ? "bg-green-600 hover:bg-green-700 text-white" 
-                    : "bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
-                }`}
-              >
-                {addedToCart ? (
-                  <>
-                    <Check size={20} />
-                    Added to Cart
-                  </>
-                ) : addingToCart ? (
-                  <Loader2 className="animate-spin" size={20} />
-                ) : (
-                  <>
-                    <ShoppingCart size={20} />
-                    Add to Cart
-                  </>
-                )}
-              </button>
-              <button
-                onClick={shareProduct}
-                className="p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-              >
-                <Share2 size={20} />
-              </button>
-            </div>
-
-            <div className="border-t dark:border-gray-700 pt-6">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Product Information</h3>
-              <dl className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-gray-500 dark:text-gray-400">Category</dt>
-                  <dd className="text-gray-900 dark:text-white">{product.category}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-gray-500 dark:text-gray-400">Availability</dt>
-                  <dd className={product.isActive ? "text-green-600" : "text-red-600"}>
-                    {product.isActive ? "In Stock" : "Out of Stock"}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* Crawlable SSR summary for bots that skip JS */}
+      <noscript>
+        <article>
+          <h1>{product.name}</h1>
+          <p>{product.description}</p>
+          <p>
+            Price: ₦{product.price.toLocaleString()} · {product.category}
+          </p>
+        </article>
+      </noscript>
+      <ProductDetailClient product={product} siteOrigin={BASE_URL} />
+    </>
   );
 }
