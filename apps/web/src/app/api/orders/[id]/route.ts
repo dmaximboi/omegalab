@@ -83,10 +83,14 @@ export async function GET(
 
     return NextResponse.json({
       id: order.id,
+      // Catalogue / order total is always NGN
       totalAmount: Number(order.totalAmount),
+      orderCurrency: order.orderCurrency || "NGN",
+      // Locked Bachs charge (USD) when quote exists
+      paymentCurrency: order.paymentCurrency || null,
+      paymentAmount: order.paymentAmount ? Number(order.paymentAmount.toString()) : null,
       status: order.status,
       txRef: order.txRef,
-      currency: (process.env.PAYMENT_CURRENCY || "USD").toUpperCase(),
       userEmail: customer.email,
       userName: customer.name,
       userPhone: customer.phone,

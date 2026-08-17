@@ -1,21 +1,9 @@
 import { PrismaClient, OrderStatus } from "@prisma/client";
-import Decimal from "decimal.js";
-import { getCheckoutSession, isValidCheckoutId, type BachsCheckoutSession } from "@/lib/bachs";
+import { getCheckoutSession, isValidCheckoutId } from "@/lib/bachs";
 import { timingSafeEqualString } from "@/lib/payment";
+import { evaluateCheckout } from "@/lib/checkout-checks";
 
-const EXPECTED_CURRENCY = (process.env.PAYMENT_CURRENCY || "USD").toUpperCase();
-
-function formatPaidAmount(amount: number): string {
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: EXPECTED_CURRENCY,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `${EXPECTED_CURRENCY} ${amount.toLocaleString()}`;
-  }
-}
+export { evaluateCheckout } from "@/lib/checkout-checks";
 
 type PrismaLike = PrismaClient;
 
@@ -26,36 +14,16 @@ export interface FulfillResult {
   amount?: number;
 }
 
-function normalizeStatus(value: string | null | undefined): string {
-  return String(value || "").trim().toLowerCase();
-}
-
-export function evaluateCheckout(
-  session: BachsCheckoutSession,
-  expected: { txRef: string; amount: string | number; orderId: string }
-) {
-  const status = normalizeStatus(session.status);
-  const paymentStatus = normalizeStatus(session.payment_status || session.charge?.status);
-  const isSuccess =
-    (status === "completed" || status === "complete") &&
-    (paymentStatus === "succeeded" ||
-      paymentStatus === "successful" ||
-      paymentStatus === "completed" ||
-      (paymentStatus === "" && Boolean(session.charge?.payment_id)));
-
-  const paidAmount = new Decimal(session.amount ?? session.charge?.amount ?? "0");
-  const dbAmount = new Decimal(expected.amount.toString());
-  const metaOrderId = session.metadata?.order_id;
-
-  return {
-    sessionOpen: status === "open",
-    isSuccess,
-    txRefMatch: session.reference === expected.txRef,
-    amountOk: paidAmount.gte(dbAmount),
-    currencyOk: normalizeStatus(session.currency || session.charge?.currency) === EXPECTED_CURRENCY.toLowerCase(),
-    orderIdMatch: !metaOrderId || metaOrderId === expected.orderId,
-    paidAmount,
-  };
+function formatMoney(amount: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat(currency === "NGN" ? "en-NG" : "en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return `${currency} ${amount.toLocaleString()}`;
+  }
 }
 
 export async function verifyAndFulfillOrder(opts: {
@@ -67,6 +35,9 @@ export async function verifyAndFulfillOrder(opts: {
     paymentVerified: boolean;
     checkoutId?: string | null;
     userId: string;
+    paymentAmount?: { toString(): string } | null;
+    paymentCurrency?: string | null;
+    orderCurrency?: string | null;
   };
   checkoutId: string;
   ipAddress?: string;
@@ -94,6 +65,17 @@ export async function verifyAndFulfillOrder(opts: {
     return { ok: true, alreadyPaid: true };
   }
 
+  if (!order.paymentAmount || !order.paymentCurrency) {
+    await logPayment(prisma, {
+      orderId: order.id,
+      txRef: order.txRef,
+      flwRef: checkoutId,
+      status: "step:VERIFY_REJECTED:missing_fx_quote",
+      ipAddress,
+    });
+    return { ok: false, reason: "missing_fx_quote" };
+  }
+
   const session = await getCheckoutSession(checkoutId);
   if (!session) {
     await logPayment(prisma, {
@@ -106,9 +88,11 @@ export async function verifyAndFulfillOrder(opts: {
     return { ok: false, reason: "session_not_found" };
   }
 
+  const paymentCurrency = order.paymentCurrency.toUpperCase();
   const checks = evaluateCheckout(session, {
     txRef: order.txRef,
-    amount: order.totalAmount.toString(),
+    paymentAmount: order.paymentAmount.toString(),
+    paymentCurrency,
     orderId: order.id,
   });
 
@@ -139,7 +123,9 @@ export async function verifyAndFulfillOrder(opts: {
   }
 
   const chargeId = session.charge?.payment_id || checkoutId;
-  const paid = checks.paidAmount.toNumber();
+  const paidUsd = checks.paidAmount.toNumber();
+  const orderNgn = Number(order.totalAmount.toString());
+  const orderCurrency = (order.orderCurrency || "NGN").toUpperCase();
 
   const updated = await prisma.order.updateMany({
     where: { id: order.id, paymentVerified: false },
@@ -161,9 +147,16 @@ export async function verifyAndFulfillOrder(opts: {
     orderId: order.id,
     txRef: order.txRef,
     flwRef: chargeId,
-    amount: paid,
+    amount: paidUsd,
     status: "step:PAID",
-    responseData: JSON.stringify({ checkoutId, currency: EXPECTED_CURRENCY, verifiedBy }),
+    responseData: JSON.stringify({
+      checkoutId,
+      orderCurrency,
+      orderAmountNgn: orderNgn,
+      paymentCurrency,
+      paymentAmountUsd: paidUsd,
+      verifiedBy,
+    }),
     ipAddress,
   });
 
@@ -173,14 +166,14 @@ export async function verifyAndFulfillOrder(opts: {
         userId: order.userId,
         type: "order_success",
         title: "Payment Successful! ✓",
-        body: `Your order #${order.txRef} has been confirmed. Total: ${formatPaidAmount(paid)}. Your receipt is ready. [orderId:${order.id}]`,
+        body: `Your order #${order.txRef} has been confirmed. Total: ${formatMoney(orderNgn, orderCurrency)} (collected ${formatMoney(paidUsd, paymentCurrency)}). Your receipt is ready. [orderId:${order.id}]`,
       },
     });
   } catch (err) {
     console.error("[NOTIFICATION] Failed to create:", err);
   }
 
-  return { ok: true, amount: paid };
+  return { ok: true, amount: paidUsd };
 }
 
 export async function logPayment(
@@ -240,5 +233,3 @@ export async function logSecurityEvent(
     // non-blocking
   }
 }
-
-export { EXPECTED_CURRENCY };

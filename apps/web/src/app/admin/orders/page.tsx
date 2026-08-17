@@ -57,6 +57,11 @@ interface Order {
   totalAmount: number;
   paymentVerified: boolean;
   flwRef: string | null;
+  orderCurrency?: string;
+  paymentCurrency?: string | null;
+  paymentAmount?: number | null;
+  fxRate?: number | null;
+  fxSource?: string | null;
   ipAddress: string | null;
   userAgent: string | null;
   customer: { name: string | null; email: string | null };
@@ -90,7 +95,7 @@ const STEP_EXPLANATIONS: Record<string, { label: string; description: string; ic
   },
   "step:VERIFYING": {
     label: "Verifying Payment",
-    description: "Server is making a secure server-to-server API call to Bachs to verify the checkout session. Checking: (1) session status, (2) reference matches DB txRef, (3) amount >= order total using Decimal comparison, (4) currency matches PAYMENT_CURRENCY, (5) metadata.order_id matches.",
+    description: "Server is making a secure server-to-server API call to Bachs to verify the checkout session. Checking: (1) session status, (2) reference matches DB txRef, (3) paid USD amount >= locked paymentAmount, (4) currency is USD, (5) metadata.order_id matches.",
     icon: ShieldCheck,
     color: "text-purple-600 bg-purple-50 border-purple-200",
   },
@@ -429,6 +434,32 @@ export default function AdminOrdersPage() {
                       <InfoCard label="TX Reference" value={order.txRef} icon={CreditCard} />
                       <InfoCard label="Provider Reference" value={order.flwRef || "—"} icon={Zap} />
                       <InfoCard label="Verified" value={order.paymentVerified ? "Yes ✓" : "No"} icon={ShieldCheck} />
+                      <InfoCard
+                        label="Order Total (NGN)"
+                        value={formatCurrency(order.totalAmount)}
+                        icon={Package}
+                      />
+                      <InfoCard
+                        label="Bachs Charge (USD)"
+                        value={
+                          order.paymentAmount != null
+                            ? new Intl.NumberFormat("en-US", {
+                                style: "currency",
+                                currency: order.paymentCurrency || "USD",
+                              }).format(order.paymentAmount)
+                            : "—"
+                        }
+                        icon={CreditCard}
+                      />
+                      <InfoCard
+                        label="FX Rate"
+                        value={
+                          order.fxRate != null
+                            ? `₦${order.fxRate.toLocaleString()}/USD (${order.fxSource || "n/a"})`
+                            : "—"
+                        }
+                        icon={Globe}
+                      />
                       <InfoCard label="IP Address" value={order.ipAddress || "—"} icon={Globe} />
                       <InfoCard label="User Agent" value={order.userAgent?.slice(0, 60) + "..." || "—"} icon={Monitor} />
                       <InfoCard label="Customer" value={`${order.customer.name || "—"} (${order.customer.email})`} icon={User} />

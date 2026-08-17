@@ -24,7 +24,7 @@ export default function TermsPage() {
 
             <h2>3. Orders and Payment</h2>
             <p>
-              All orders are subject to acceptance. Prices are quoted in the currency shown at checkout (default USD for card payments) and are exclusive of taxes unless stated otherwise. Payment is processed securely through Bachs. Orders are not considered confirmed until payment is received.
+              All orders are subject to acceptance. Prices are quoted in Nigerian Naira (₦). Card payments are settled through Bachs in USD using a server-side FX conversion at checkout. Orders are not considered confirmed until payment is received.
             </p>
 
             <h2>4. Delivery</h2>

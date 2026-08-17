@@ -84,6 +84,14 @@ model Order {
   user            User        @relation(fields: [userId], references: [id])
   items           OrderItem[]
   totalAmount     Decimal
+  // Catalogue currency is always NGN; Bachs is charged in paymentCurrency
+  orderCurrency   String      @default("NGN")
+  paymentCurrency String?     // e.g. USD when charging Bachs
+  paymentAmount   Decimal?    // Locked USD (or settlement) amount sent to Bachs
+  fxRate          Decimal?    // NGN per 1 USD at quote time
+  fxBufferPercent Decimal?    // Buffer applied when locking quote (e.g. 2)
+  fxQuotedAt      DateTime?   // When the FX quote was locked
+  fxSource        String?     // live | fallback
   status          OrderStatus @default(INITIATED)
   flwRef          String?     // Provider charge/payment id (Bachs charge id; legacy column name)
   checkoutId      String?     @unique

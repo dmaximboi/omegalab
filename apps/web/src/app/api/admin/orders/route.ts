@@ -78,6 +78,11 @@ export async function GET(request: Request) {
       totalAmount: parseFloat(order.totalAmount.toString()),
       paymentVerified: order.paymentVerified,
       flwRef: order.flwRef,
+      orderCurrency: order.orderCurrency || "NGN",
+      paymentCurrency: order.paymentCurrency || null,
+      paymentAmount: order.paymentAmount ? parseFloat(order.paymentAmount.toString()) : null,
+      fxRate: order.fxRate ? parseFloat(order.fxRate.toString()) : null,
+      fxSource: order.fxSource || null,
       ipAddress: order.ipAddress,
       userAgent: order.userAgent,
       customer: {

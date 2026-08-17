@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PrismaClient, OrderStatus } from "@prisma/client";
+import Decimal from "decimal.js";
 import { cookies } from "next/headers";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -7,6 +8,7 @@ import { createCheckoutSession, getCheckoutSession } from "@/lib/bachs";
 import { getAppUrl, normalizeNgPhone, timingSafeEqualString } from "@/lib/payment";
 import { logPayment } from "@/lib/fulfill-order";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { quoteNgnToUsd, type FxQuote } from "@/lib/fx";
 
 export const dynamic = "force-dynamic";
 
@@ -39,8 +41,9 @@ export async function POST(
     const cookieStore = cookies();
     const paymentToken = cookieStore.get("payment_token")?.value;
     const session = await getServerSession(authOptions);
+    const prisma = getPrisma();
 
-    const order = await getPrisma().order.findUnique({
+    const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: { user: { select: { email: true, name: true } } },
     });
@@ -79,11 +82,51 @@ export async function POST(
       const existing = await getCheckoutSession(order.checkoutId);
       const status = String(existing?.status || "").toLowerCase();
       if (existing?.checkout_url && status === "open") {
-        return NextResponse.json({ checkoutUrl: existing.checkout_url, checkoutId: order.checkoutId });
+        return NextResponse.json({
+          checkoutUrl: existing.checkout_url,
+          checkoutId: order.checkoutId,
+          orderCurrency: order.orderCurrency || "NGN",
+          orderAmount: Number(order.totalAmount.toString()),
+          paymentCurrency: order.paymentCurrency || "USD",
+          paymentAmount: order.paymentAmount ? Number(order.paymentAmount.toString()) : undefined,
+        });
       }
     }
 
-    const amount = Number(order.totalAmount.toString());
+    // Lock FX quote once; reuse on retries so amount never drifts mid-checkout
+    let quote: FxQuote;
+    if (
+      order.paymentAmount &&
+      order.fxRate &&
+      order.fxBufferPercent != null &&
+      order.fxQuotedAt &&
+      order.paymentCurrency
+    ) {
+      quote = {
+        ngnPerUsd: new Decimal(order.fxRate.toString()),
+        bufferPercent: new Decimal(order.fxBufferPercent.toString()),
+        paymentAmountUsd: new Decimal(order.paymentAmount.toString()),
+        source: order.fxSource === "live" ? "live" : "fallback",
+        quotedAt: order.fxQuotedAt,
+      };
+    } else {
+      quote = await quoteNgnToUsd(order.totalAmount.toString());
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          orderCurrency: "NGN",
+          paymentCurrency: "USD",
+          paymentAmount: quote.paymentAmountUsd.toNumber(),
+          fxRate: quote.ngnPerUsd.toNumber(),
+          fxBufferPercent: quote.bufferPercent.toNumber(),
+          fxQuotedAt: quote.quotedAt,
+          fxSource: quote.source,
+        },
+      });
+    }
+
+    const paymentCurrency = (process.env.PAYMENT_CURRENCY || "USD").toUpperCase();
+    const usdAmount = quote.paymentAmountUsd.toNumber();
     const appUrl = getAppUrl();
     const customerEmail = order.customerEmail || order.user.email;
     const customerName = order.customerName || order.user.name || "Customer";
@@ -92,8 +135,8 @@ export async function POST(
     const result = await createCheckoutSession(
       {
         txRef: order.txRef,
-        amount,
-        currency: process.env.PAYMENT_CURRENCY || "USD",
+        amount: usdAmount,
+        currency: paymentCurrency,
         customerEmail,
         customerName,
         customerPhone,
@@ -102,15 +145,19 @@ export async function POST(
         metadata: {
           order_id: order.id,
           tx_ref: order.txRef,
+          order_currency: "NGN",
+          order_amount_ngn: order.totalAmount.toString(),
+          fx_rate: quote.ngnPerUsd.toFixed(4),
+          fx_source: quote.source,
         },
       },
       order.checkoutId
         ? `order:${order.id}:${order.txRef}:next:${order.checkoutId}`
-        : `order:${order.id}:${order.txRef}`
+        : `order:${order.id}:${order.txRef}:usd:${usdAmount}`
     );
 
     if (result.status !== "success" || !result.data) {
-      await logPayment(getPrisma(), {
+      await logPayment(prisma, {
         orderId: order.id,
         txRef: order.txRef,
         status: "step:FAILED:checkout_create",
@@ -120,7 +167,7 @@ export async function POST(
       return NextResponse.json({ error: result.message || "Could not start payment" }, { status: 502 });
     }
 
-    await getPrisma().order.update({
+    await prisma.order.update({
       where: { id: order.id },
       data: {
         checkoutId: result.data.checkoutId,
@@ -128,20 +175,35 @@ export async function POST(
       },
     });
 
-    await logPayment(getPrisma(), {
+    await logPayment(prisma, {
       orderId: order.id,
       txRef: order.txRef,
       flwRef: result.data.checkoutId,
+      amount: usdAmount,
       status: "step:PROCESSING",
+      responseData: JSON.stringify({
+        orderCurrency: "NGN",
+        orderAmountNgn: order.totalAmount.toString(),
+        paymentCurrency,
+        paymentAmountUsd: usdAmount,
+        fxRate: quote.ngnPerUsd.toString(),
+        fxBufferPercent: quote.bufferPercent.toString(),
+        fxSource: quote.source,
+      }),
       ipAddress,
     });
 
     return NextResponse.json({
       checkoutUrl: result.data.checkoutUrl,
       checkoutId: result.data.checkoutId,
+      orderCurrency: "NGN",
+      orderAmount: Number(order.totalAmount.toString()),
+      paymentCurrency,
+      paymentAmount: usdAmount,
     });
   } catch (error) {
     console.error("[CHECKOUT] Error:", error);
-    return NextResponse.json({ error: "Could not start payment" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Could not start payment";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

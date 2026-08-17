@@ -6,12 +6,32 @@ import { Loader2, AlertCircle, CheckCircle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
+type OrderView = {
+  totalAmount?: number;
+  orderCurrency?: string;
+  paymentAmount?: number | null;
+  paymentCurrency?: string | null;
+  status?: string;
+};
+
+function formatMoney(amount: number, currency: string) {
+  try {
+    return new Intl.NumberFormat(currency === "NGN" ? "en-NG" : "en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return `${currency} ${amount.toLocaleString()}`;
+  }
+}
+
 export default function PaymentProcessingPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.orderId as string;
 
-  const [order, setOrder] = useState<{ totalAmount?: number; status?: string; currency?: string } | null>(null);
+  const [order, setOrder] = useState<OrderView | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "processing" | "success" | "failed">("pending");
@@ -77,6 +97,16 @@ export default function PaymentProcessingPage() {
         return;
       }
 
+      if (data.paymentAmount != null) {
+        setOrder((prev) => ({
+          ...(prev || {}),
+          paymentAmount: data.paymentAmount,
+          paymentCurrency: data.paymentCurrency || "USD",
+          totalAmount: data.orderAmount ?? prev?.totalAmount,
+          orderCurrency: data.orderCurrency || "NGN",
+        }));
+      }
+
       window.location.assign(data.checkoutUrl);
     } catch {
       setPaymentStatus("failed");
@@ -136,6 +166,11 @@ export default function PaymentProcessingPage() {
     );
   }
 
+  const orderCurrency = order?.orderCurrency || "NGN";
+  const orderTotal = order?.totalAmount || 0;
+  const paymentCurrency = order?.paymentCurrency || "USD";
+  const paymentAmount = order?.paymentAmount;
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
       <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-8 max-w-md text-center">
@@ -145,12 +180,13 @@ export default function PaymentProcessingPage() {
           Order #<span className="font-mono">{orderId.slice(-8).toUpperCase()}</span>
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Total:{" "}
-          {new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: order?.currency || "USD",
-          }).format(order?.totalAmount || 0)}
+          Order total: {formatMoney(orderTotal, orderCurrency)}
         </p>
+        {paymentAmount != null && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Charged via Bachs: {formatMoney(paymentAmount, paymentCurrency)}
+          </p>
+        )}
         <p className="text-sm text-blue-600 mt-4">You will be sent to Bachs to complete payment.</p>
       </div>
     </div>
