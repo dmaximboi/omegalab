@@ -77,7 +77,7 @@ export async function GET(request: Request) {
       status: order.status,
       totalAmount: parseFloat(order.totalAmount.toString()),
       paymentVerified: order.paymentVerified,
-      flwRef: order.flwRef,
+      providerRef: order.providerRef,
       orderCurrency: order.orderCurrency || "NGN",
       paymentCurrency: order.paymentCurrency || null,
       paymentAmount: order.paymentAmount ? parseFloat(order.paymentAmount.toString()) : null,

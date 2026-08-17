@@ -28,7 +28,6 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const orderId = typeof body.orderId === "string" ? body.orderId : "";
-    const checkoutIdRaw = typeof body.checkout_id === "string" ? body.checkout_id : "";
 
     if (!orderId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -40,7 +39,7 @@ export async function POST(request: Request) {
 
     const order = await getPrisma().order.findUnique({ where: { id: orderId } });
     if (!order) {
-      await logPayment(getPrisma(), { flwRef: checkoutIdRaw || null, status: "order_not_found", ipAddress });
+      await logPayment(getPrisma(), { orderId, status: "order_not_found", ipAddress });
       return NextResponse.json({ error: "Payment verification failed" }, { status: 400 });
     }
 
@@ -79,7 +78,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Order has expired" }, { status: 400 });
     }
 
-    const checkoutId = checkoutIdRaw || order.checkoutId || "";
+    const checkoutId = order.checkoutId || "";
     if (!checkoutId || !isValidCheckoutId(checkoutId)) {
       return NextResponse.json({ error: "Missing checkout session" }, { status: 400 });
     }

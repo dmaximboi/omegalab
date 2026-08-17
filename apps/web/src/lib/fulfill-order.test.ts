@@ -60,4 +60,46 @@ assert.strictEqual(
   "order_id mismatch rejected"
 );
 
+assert.strictEqual(
+  evaluateCheckout(session({ metadata: null }), expected).orderIdMatch,
+  false,
+  "missing order_id metadata rejected"
+);
+
+assert.strictEqual(
+  evaluateCheckout(session({ payment_status: null, charge: { payment_id: "pay_1" } }), expected).isSuccess,
+  false,
+  "missing payment status is not success"
+);
+
+assert.strictEqual(
+  evaluateCheckout(session({ payment_status: "pending" }), expected).isSuccess,
+  false,
+  "pending payment status is not success"
+);
+
+assert.strictEqual(
+  evaluateCheckout(session({ reference: null }), expected).txRefMatch,
+  false,
+  "missing reference rejected"
+);
+
+assert.strictEqual(
+  evaluateCheckout(session({ amount: null, charge: undefined }), expected).amountOk,
+  false,
+  "missing amount rejected"
+);
+
+assert.strictEqual(
+  evaluateCheckout(session({ currency: null }), expected).currencyOk,
+  false,
+  "missing currency rejected"
+);
+
+assert.strictEqual(
+  evaluateCheckout(session({ amount: "not-a-number" }), expected).amountOk,
+  false,
+  "unparseable amount rejected"
+);
+
 console.log("✓ fulfill-order evaluateCheckout checks passed");

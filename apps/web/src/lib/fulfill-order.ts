@@ -1,5 +1,5 @@
 import { PrismaClient, OrderStatus } from "@prisma/client";
-import { getCheckoutSession, isValidCheckoutId } from "@/lib/bachs";
+import { getCheckoutSession, isValidCheckoutId, type BachsCheckoutSession } from "@/lib/bachs";
 import { timingSafeEqualString } from "@/lib/payment";
 import { evaluateCheckout } from "@/lib/checkout-checks";
 
@@ -12,6 +12,20 @@ export interface FulfillResult {
   alreadyPaid?: boolean;
   reason?: string;
   amount?: number;
+}
+
+function summarizeSession(session: BachsCheckoutSession) {
+  return {
+    checkout_id: session.checkout_id,
+    status: session.status,
+    payment_status: session.payment_status ?? null,
+    amount: session.amount ?? null,
+    currency: session.currency ?? null,
+    reference: session.reference ?? null,
+    order_id: session.metadata?.order_id ?? null,
+    charge_id: session.charge?.payment_id ?? null,
+    charge_status: session.charge?.status ?? null,
+  };
 }
 
 function formatMoney(amount: number, currency: string): string {
@@ -54,7 +68,7 @@ export async function verifyAndFulfillOrder(opts: {
     await logPayment(prisma, {
       orderId: order.id,
       txRef: order.txRef,
-      flwRef: checkoutId,
+      providerRef: checkoutId,
       status: "step:VERIFY_REJECTED:checkout_mismatch",
       ipAddress,
     });
@@ -69,7 +83,7 @@ export async function verifyAndFulfillOrder(opts: {
     await logPayment(prisma, {
       orderId: order.id,
       txRef: order.txRef,
-      flwRef: checkoutId,
+      providerRef: checkoutId,
       status: "step:VERIFY_REJECTED:missing_fx_quote",
       ipAddress,
     });
@@ -81,7 +95,7 @@ export async function verifyAndFulfillOrder(opts: {
     await logPayment(prisma, {
       orderId: order.id,
       txRef: order.txRef,
-      flwRef: checkoutId,
+      providerRef: checkoutId,
       status: "step:VERIFY_REJECTED:session_not_found",
       ipAddress,
     });
@@ -114,9 +128,9 @@ export async function verifyAndFulfillOrder(opts: {
     await logPayment(prisma, {
       orderId: order.id,
       txRef: order.txRef,
-      flwRef: checkoutId,
+      providerRef: checkoutId,
       status: `step:VERIFY_REJECTED:${failReason}`,
-      responseData: JSON.stringify(session),
+      responseData: JSON.stringify(summarizeSession(session)),
       ipAddress,
     });
     return { ok: false, reason: failReason };
@@ -132,7 +146,7 @@ export async function verifyAndFulfillOrder(opts: {
     data: {
       status: OrderStatus.PAID,
       paymentVerified: true,
-      flwRef: chargeId,
+      providerRef: chargeId,
       checkoutId,
       verifiedAt: new Date(),
       verifiedBy,
@@ -146,7 +160,7 @@ export async function verifyAndFulfillOrder(opts: {
   await logPayment(prisma, {
     orderId: order.id,
     txRef: order.txRef,
-    flwRef: chargeId,
+    providerRef: chargeId,
     amount: paidUsd,
     status: "step:PAID",
     responseData: JSON.stringify({
@@ -181,7 +195,7 @@ export async function logPayment(
   data: {
     orderId?: string | null;
     txRef?: string | null;
-    flwRef?: string | null;
+    providerRef?: string | null;
     amount?: number;
     status: string;
     responseCode?: string;
@@ -195,7 +209,7 @@ export async function logPayment(
       data: {
         orderId: data.orderId || null,
         txRef: data.txRef || null,
-        flwRef: data.flwRef || null,
+        providerRef: data.providerRef || null,
         amount: data.amount ?? null,
         status: data.status,
         responseCode: data.responseCode || null,

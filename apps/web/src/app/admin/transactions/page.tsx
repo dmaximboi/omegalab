@@ -13,7 +13,7 @@ interface TransactionLog {
   id: string;
   orderId: string | null;
   txRef: string | null;
-  flwRef: string | null;
+  providerRef: string | null;
   amount: number | null;
   status: string;
   responseCode: string | null;
@@ -68,7 +68,7 @@ export default function AdminTransactionsPage() {
     const matchesSearch = 
       search === "" || 
       log.txRef?.toLowerCase().includes(search.toLowerCase()) ||
-      log.flwRef?.toLowerCase().includes(search.toLowerCase()) ||
+      log.providerRef?.toLowerCase().includes(search.toLowerCase()) ||
       log.orderId?.toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
@@ -183,7 +183,7 @@ export default function AdminTransactionsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <code className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded dark:text-gray-300">
-                          {log.flwRef || "N/A"}
+                          {log.providerRef || "N/A"}
                         </code>
                       </td>
                       <td className="px-4 py-3 text-sm font-medium dark:text-white">

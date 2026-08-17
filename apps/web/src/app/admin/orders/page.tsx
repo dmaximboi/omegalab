@@ -56,7 +56,7 @@ interface Order {
   status: string;
   totalAmount: number;
   paymentVerified: boolean;
-  flwRef: string | null;
+  providerRef: string | null;
   orderCurrency?: string;
   paymentCurrency?: string | null;
   paymentAmount?: number | null;
@@ -253,7 +253,7 @@ export default function AdminOrdersPage() {
         order.customer.email,
         new Date(order.createdAt).toLocaleString(),
         order.txRef,
-        order.flwRef || ""
+        order.providerRef || ""
       ])
     ].map(row => row.join(",")).join("\n");
 
@@ -432,7 +432,7 @@ export default function AdminOrdersPage() {
                     {/* Order Info Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <InfoCard label="TX Reference" value={order.txRef} icon={CreditCard} />
-                      <InfoCard label="Provider Reference" value={order.flwRef || "—"} icon={Zap} />
+                      <InfoCard label="Provider Reference" value={order.providerRef || "—"} icon={Zap} />
                       <InfoCard label="Verified" value={order.paymentVerified ? "Yes ✓" : "No"} icon={ShieldCheck} />
                       <InfoCard
                         label="Order Total (NGN)"

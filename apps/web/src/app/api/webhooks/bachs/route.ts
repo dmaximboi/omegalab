@@ -102,7 +102,7 @@ export async function POST(request: Request) {
         await logPayment(prisma, {
           orderId: order.id,
           txRef: order.txRef,
-          flwRef: checkoutId || event.data?.charge_id || null,
+          providerRef: checkoutId || event.data?.charge_id || null,
           status: `webhook:${type}`,
           webhookData: JSON.stringify({ id: event.id, type, status: event.data?.status }),
           ipAddress,
@@ -147,7 +147,7 @@ export async function POST(request: Request) {
     if (!order) {
       await logPayment(prisma, {
         txRef: reference || null,
-        flwRef: checkoutId,
+        providerRef: checkoutId,
         status: "webhook:order_not_found",
         webhookData: JSON.stringify({ id: event.id, type }),
         ipAddress,
@@ -181,7 +181,7 @@ export async function POST(request: Request) {
       await logPayment(prisma, {
         orderId: order.id,
         txRef: order.txRef,
-        flwRef: checkoutId,
+        providerRef: checkoutId,
         status: `webhook:failed:${result.reason}`,
         webhookData: JSON.stringify({ id: event.id, type, reason: result.reason }),
         ipAddress,

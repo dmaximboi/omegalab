@@ -93,7 +93,6 @@ export async function POST(
       }
     }
 
-    // Lock FX quote once; reuse on retries so amount never drifts mid-checkout
     let quote: FxQuote;
     if (
       order.paymentAmount &&
@@ -157,6 +156,7 @@ export async function POST(
     );
 
     if (result.status !== "success" || !result.data) {
+      console.error("[CHECKOUT] Provider rejected session:", result.message);
       await logPayment(prisma, {
         orderId: order.id,
         txRef: order.txRef,
@@ -164,7 +164,10 @@ export async function POST(
         responseData: result.message,
         ipAddress,
       });
-      return NextResponse.json({ error: result.message || "Could not start payment" }, { status: 502 });
+      return NextResponse.json(
+        { error: "Payment could not be started. Please try again or contact support." },
+        { status: 502 }
+      );
     }
 
     await prisma.order.update({
@@ -178,7 +181,7 @@ export async function POST(
     await logPayment(prisma, {
       orderId: order.id,
       txRef: order.txRef,
-      flwRef: result.data.checkoutId,
+      providerRef: result.data.checkoutId,
       amount: usdAmount,
       status: "step:PROCESSING",
       responseData: JSON.stringify({
@@ -203,7 +206,9 @@ export async function POST(
     });
   } catch (error) {
     console.error("[CHECKOUT] Error:", error);
-    const message = error instanceof Error ? error.message : "Could not start payment";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Payment could not be started. Please try again or contact support." },
+      { status: 500 }
+    );
   }
 }

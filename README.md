@@ -9,7 +9,7 @@
 A production-grade, PWA-installable, full-stack web application for **De-Omega Labaffairs Nig. Ltd.** — a Nigerian company specializing in procurement, sales, installation, and maintenance of laboratory, medical, scientific, and factory equipment.
 
 **Domain:** `omegalabaffairs.com` (placeholder — update in `.env`)
-**Stack:** Next.js 14 (App Router) · Turso (libSQL) · Prisma ORM · Uploadthing · Flutterwave · NextAuth.js · Upstash Redis · Sharp · QRCode · node-cron
+**Stack:** Next.js 14 (App Router) · Turso (libSQL) · Prisma ORM · Uploadthing · Bachs · NextAuth.js · Upstash Redis · Sharp · QRCode · node-cron
 
 ---
 
@@ -85,8 +85,8 @@ de-omega-labaffairs/
 │   │   ├── notifications/
 │   │   │   └── route.ts              # GET user notifications (auth required)
 │   │   ├── webhooks/
-│   │   │   └── flutterwave/
-│   │   │       └── route.ts          # POST Flutterwave webhook (signature verified)
+│   │   │   └── bachs/
+│   │   │       └── route.ts          # POST Bachs webhook (signature + timestamp verified)
 │   │   ├── upload/
 │   │   │   └── route.ts              # POST image upload (admin only, sharp compress)
 │   │   └── cron/
@@ -107,7 +107,8 @@ de-omega-labaffairs/
 ├── lib/
 │   ├── db.ts                         # Turso + Prisma client
 │   ├── auth.ts                       # NextAuth config
-│   ├── flutterwave.ts                # Flutterwave server-side utils
+│   ├── bachs.ts                      # Bachs server-side client
+│   ├── fx.ts                         # Server-only NGN -> USD quoting
 │   ├── hash.ts                       # SHA-256 + salt hashing utilities
 │   ├── uploadthing.ts                # Uploadthing server config
 │   ├── redis.ts                      # Upstash Redis client
@@ -184,7 +185,7 @@ model Order {
   items           OrderItem[]
   totalAmount     Decimal
   status          OrderStatus @default(PENDING)
-  flwRef          String?     // Flutterwave reference
+  providerRef     String?     // Bachs charge/payment id
   txRef           String      @unique // Our internal tx reference
   receiptHash     String      @unique // SHA-256 + salt hash for QR
   paymentVerified Boolean     @default(false)
@@ -310,7 +311,7 @@ Navbar links: **Home · Catalogue · Contact · About** — all smooth scroll or
 - Image gallery: up to 5 images, primary image large, thumbnails below
 - Product name, full description, price
 - Quantity selector
-- "Order Now" button — triggers Google sign-in if not authenticated, then proceeds to Flutterwave checkout
+- "Order Now" button — triggers Google sign-in if not authenticated, then proceeds to Bachs hosted checkout
 - Related products section (same category)
 
 ---
@@ -439,36 +440,37 @@ Server-side logic:
    store salt + hash in DB
    ```
 7. Create Order record in DB with status PENDING
-8. Return Flutterwave payment config (amount from DB, txRef, public key only)
+8. Lock an NGN→USD FX quote server-side and create a Bachs hosted checkout session with the server-computed USD amount
 
 ---
 
 ### `POST /api/orders/verify`
-**Auth required — called after Flutterwave redirect**
+**Payment token or order owner required — called after the Bachs redirect**
+
+The client sends only `orderId`. The checkout session id is read from the database, never from the request body.
 
 Multi-layer verification:
-1. Validate session
-2. Zod validate incoming txRef
-3. **Layer 1:** Check order exists in DB and belongs to this user
-4. **Layer 2:** Re-verify with Flutterwave API directly (server-to-server, using secret key)
-5. **Layer 3:** Compare Flutterwave returned amount vs DB stored amount (must match exactly)
-6. **Layer 4:** Check idempotency — reject if order already marked PAID
-7. **Layer 5:** Verify txRef signature has not been tampered
-8. On all layers pass → update order status to PAID, set paymentVerified = true, verifiedAt = now()
-9. Return receipt URL
+1. Validate payment token (timing-safe) or authenticated order owner
+2. **Layer 1:** Check order exists and is not already verified
+3. **Layer 2:** Re-fetch the checkout session from the Bachs API (server-to-server, using the secret key)
+4. **Layer 3:** Require session status completed and an explicit success payment status
+5. **Layer 4:** Compare returned amount and currency against the locked USD quote in the DB
+6. **Layer 5:** Require `reference` and `metadata.order_id` to match the order
+7. **Layer 6:** Idempotent write — `updateMany` guarded on `paymentVerified: false`
+8. On all layers pass → status PAID, `paymentVerified = true`, `verifiedAt = now()`
 
 ---
 
-### `POST /api/webhooks/flutterwave`
+### `POST /api/webhooks/bachs`
 **No auth — but strict signature verification**
 
-1. Extract `verif-hash` header from request
-2. Compute HMAC-SHA256 of raw request body using `FLW_WEBHOOK_SECRET`
-3. Compare using `crypto.timingSafeEqual` — reject if mismatch
-4. Parse payload
-5. Cross-verify transaction with Flutterwave API (server-to-server)
-6. Update order status in DB
-7. Return 200 immediately (Flutterwave requires fast response)
+1. Read the raw request body before any parsing
+2. Compute HMAC-SHA256 over `timestamp.rawBody` using `BACHS_WEBHOOK_SECRET`
+3. Compare using `crypto.timingSafeEqual`, and reject timestamps older than 300s (replay guard)
+4. Reject events whose `organization_id` does not match `BACHS_ORG_ID`
+5. Deduplicate on `WebhookEvent.id` — an event is processed at most once
+6. Run the same server-to-server verification as the callback path before fulfilling
+7. Return 200 quickly
 
 ---
 
@@ -542,20 +544,22 @@ Multi-layer verification:
 15. Receipt hash: `SHA-256(txRef + userId + totalAmount + salt)` — salted per order
 16. Salt generated with `crypto.randomBytes(32)` — stored separately in DB
 17. All hash comparisons use `crypto.timingSafeEqual` — prevents timing attacks
-18. Flutterwave webhook: HMAC-SHA256 verification of raw payload
+18. Bachs webhook: HMAC-SHA256 verification of the raw payload plus timestamp
 19. Session tokens: signed + encrypted with `NEXTAUTH_SECRET`
 20. Cookies: HTTP-only, Secure, SameSite=Strict
 
 ### Payment Security
 21. Product price never accepted from client — always fetched from DB server-side
-22. Total amount computed server-side — Flutterwave receives server-computed amount only
+22. Total amount computed server-side — Bachs receives the server-computed amount only
 23. Idempotency keys on all payment initiations
-24. Multi-layer post-payment verification (5 layers — see `/api/orders/verify`)
-25. Webhook signature verification via HMAC-SHA256 + `timingSafeEqual`
-26. Server-to-server Flutterwave re-verification after webhook receipt
-27. Amount cross-check: Flutterwave returned amount vs DB amount must match exactly
-28. txRef tamper check before marking any order as paid
-29. Duplicate payment guard — reject if order already PAID
+24. Multi-layer post-payment verification (see `/api/orders/verify`)
+25. Webhook signature verification via HMAC-SHA256 + `timingSafeEqual` + timestamp replay window
+26. Server-to-server Bachs re-verification after webhook receipt
+27. Amount cross-check: Bachs returned amount vs the locked USD quote in the DB
+28. Checkout session id is read from the DB only — never accepted from the browser
+29. Provider error text is logged server-side and never returned to the browser
+30. txRef tamper check before marking any order as paid
+31. Duplicate payment guard — reject if order already PAID
 
 ### API Security
 30. Rate limiting on all routes via Upstash Redis:
@@ -596,7 +600,7 @@ Multi-layer verification:
 
 ### Environment & Secrets
 53. All secrets in `.env.local` — never in source code, never in client bundle
-54. `NEXT_PUBLIC_` prefix used only for Flutterwave public key and reCAPTCHA site key
+54. `NEXT_PUBLIC_` prefix used only for the app URL and reCAPTCHA site key — no payment or FX secret is ever exposed to the client
 55. `.gitignore` strictly excludes all `.env*` files
 56. `npm audit` runs in CI pipeline — build fails on high severity vulnerabilities
 
@@ -704,10 +708,21 @@ NEXTAUTH_SECRET=
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 
-# Flutterwave
-FLW_PUBLIC_KEY=
-FLW_SECRET_KEY=
-FLW_WEBHOOK_SECRET=
+# Bachs
+BACHS_API_KEY=
+BACHS_WEBHOOK_SECRET=
+BACHS_ORG_ID=
+BACHS_MODE=
+PAYMENT_CURRENCY=USD
+RECEIPT_SECRET=
+
+# FX (NGN -> USD)
+FX_RATE_API_URL=
+FX_RATE_API_KEY=
+FX_FALLBACK_NGN_PER_USD=
+FX_BUFFER_PERCENT=2
+FX_MIN_NGN_PER_USD=
+FX_MAX_NGN_PER_USD=
 
 # Uploadthing
 UPLOADTHING_SECRET=
@@ -740,7 +755,7 @@ ADMIN_EMAILS=
 3. **Never use base64 for image storage** — Uploadthing URL strings only in DB
 4. **Never use raw SQL** — Prisma ORM only
 5. **Never expose admin routes to USER role** — check role from DB on every admin API call
-6. **Never trust Flutterwave webhook alone** — always cross-verify server-to-server
+6. **Never trust the Bachs webhook alone** — always cross-verify server-to-server
 7. **Always use `crypto.timingSafeEqual`** for any hash or secret comparison
 8. **Always salt receipt hashes** — `crypto.randomBytes(32)` per order
 9. **Always strip EXIF** from images via Sharp before upload

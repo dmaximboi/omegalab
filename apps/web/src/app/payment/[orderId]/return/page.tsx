@@ -1,17 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Loader2, AlertCircle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default function PaymentReturnPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const orderId = params.orderId as string;
-  const checkoutId = searchParams.get("checkout_id") || "";
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -23,10 +21,7 @@ export default function PaymentReturnPage() {
         const res = await fetch("/api/orders/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId,
-            checkout_id: checkoutId || undefined,
-          }),
+          body: JSON.stringify({ orderId }),
         });
 
         if (cancelled) return;
@@ -46,7 +41,7 @@ export default function PaymentReturnPage() {
           }
         }
 
-        router.replace(`/order/failed?id=${encodeURIComponent(orderId)}&tx=${encodeURIComponent(checkoutId)}`);
+        router.replace(`/order/failed?id=${encodeURIComponent(orderId)}`);
       } catch {
         if (!cancelled) setError("Could not confirm payment. If you were charged, contact support.");
       }
@@ -56,7 +51,7 @@ export default function PaymentReturnPage() {
     return () => {
       cancelled = true;
     };
-  }, [orderId, checkoutId, router]);
+  }, [orderId, router]);
 
   if (error) {
     return (

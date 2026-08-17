@@ -3,6 +3,13 @@
 // ============================================
 import crypto from "crypto";
 
+function safeEqualHex(expected: string, provided: string): boolean {
+  const a = Buffer.from(expected, "utf8");
+  const b = Buffer.from(provided || "", "utf8");
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
 // 1. Generate Transaction Hash
 export function generateTransactionHash(txRef: string, amount: number, currency: string, secret: string): string {
   const data = `${txRef}|${amount}|${currency}`;
@@ -12,7 +19,7 @@ export function generateTransactionHash(txRef: string, amount: number, currency:
 // 2. Verify Transaction Hash
 export function verifyTransactionHash(txRef: string, amount: number, currency: string, secret: string, hash: string): boolean {
   const expected = generateTransactionHash(txRef, amount, currency, secret);
-  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(hash));
+  return safeEqualHex(expected, hash);
 }
 
 // 3. Validate Amount
@@ -36,16 +43,7 @@ export function verifyBachsSignature(
   if (!Number.isFinite(timestamp) || !rawBody || !signatureHeader || !secret) return false;
   if (Math.abs(Date.now() / 1000 - timestamp) > toleranceSeconds) return false;
   const expected = crypto.createHmac("sha256", secret).update(`${timestamp}.${rawBody}`, "utf8").digest("hex");
-  try {
-    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signatureHeader));
-  } catch {
-    return false;
-  }
-}
-
-/** @deprecated Use verifyBachsSignature */
-export function verifyFlutterwaveSignature(payload: string, signature: string, secret: string): boolean {
-  return verifyBachsSignature(payload, "0", signature, secret, Number.MAX_SAFE_INTEGER);
+  return safeEqualHex(expected, signatureHeader);
 }
 
 // 5. Generate Idempotency Key
@@ -88,7 +86,7 @@ export function generatePaymentReceiptHash(orderId: string, userId: string, amou
 // 9. Verify Receipt Integrity
 export function verifyReceiptIntegrity(orderId: string, userId: string, amount: string, salt: string, hash: string): boolean {
   const expected = generatePaymentReceiptHash(orderId, userId, amount, salt);
-  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(hash));
+  return safeEqualHex(expected, hash);
 }
 
 // 10. Validate Currency

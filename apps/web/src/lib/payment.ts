@@ -7,7 +7,7 @@ export function generateTxRef(): string {
 }
 
 function receiptSecret(): string {
-  const secret = process.env.RECEIPT_SECRET || process.env.NEXTAUTH_SECRET || process.env.FLW_SECRET_KEY;
+  const secret = process.env.RECEIPT_SECRET || process.env.NEXTAUTH_SECRET;
   if (!secret) throw new Error("RECEIPT_SECRET or NEXTAUTH_SECRET must be configured for receipt hashing");
   return secret;
 }
