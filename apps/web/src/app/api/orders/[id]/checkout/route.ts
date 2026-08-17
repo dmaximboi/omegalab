@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { PrismaClient, OrderStatus } from "@prisma/client";
-import Decimal from "decimal.js";
 import { cookies } from "next/headers";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -8,7 +7,7 @@ import { createCheckoutSession, getCheckoutSession } from "@/lib/bachs";
 import { getAppUrl, normalizeNgPhone, timingSafeEqualString } from "@/lib/payment";
 import { logPayment } from "@/lib/fulfill-order";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { quoteNgnToUsd, type FxQuote } from "@/lib/fx";
+import { quoteNgnToUsd, estimateNgnAtRate } from "@/lib/fx";
 
 export const dynamic = "force-dynamic";
 
@@ -78,51 +77,42 @@ export async function POST(
       return NextResponse.json({ error: "Order has expired" }, { status: 400 });
     }
 
+    let existingSession = null;
     if (order.checkoutId) {
-      const existing = await getCheckoutSession(order.checkoutId);
-      const status = String(existing?.status || "").toLowerCase();
-      if (existing?.checkout_url && status === "open") {
+      existingSession = await getCheckoutSession(order.checkoutId);
+      const status = String(existingSession?.status || "").toLowerCase();
+      if (existingSession?.checkout_url && status === "open") {
         return NextResponse.json({
-          checkoutUrl: existing.checkout_url,
+          checkoutUrl: existingSession.checkout_url,
           checkoutId: order.checkoutId,
           orderCurrency: order.orderCurrency || "NGN",
           orderAmount: Number(order.totalAmount.toString()),
           paymentCurrency: order.paymentCurrency || "USD",
           paymentAmount: order.paymentAmount ? Number(order.paymentAmount.toString()) : undefined,
+          estimatedCheckoutNgn:
+            order.paymentAmount && order.fxRate
+              ? estimateNgnAtRate(order.paymentAmount.toString(), order.fxRate.toString()).toNumber()
+              : undefined,
         });
       }
     }
 
-    let quote: FxQuote;
-    if (
-      order.paymentAmount &&
-      order.fxRate &&
-      order.fxBufferPercent != null &&
-      order.fxQuotedAt &&
-      order.paymentCurrency
-    ) {
-      quote = {
-        ngnPerUsd: new Decimal(order.fxRate.toString()),
-        bufferPercent: new Decimal(order.fxBufferPercent.toString()),
-        paymentAmountUsd: new Decimal(order.paymentAmount.toString()),
-        source: order.fxSource === "live" ? "live" : "fallback",
-        quotedAt: order.fxQuotedAt,
-      };
-    } else {
-      quote = await quoteNgnToUsd(order.totalAmount.toString());
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          orderCurrency: "NGN",
-          paymentCurrency: "USD",
-          paymentAmount: quote.paymentAmountUsd.toNumber(),
-          fxRate: quote.ngnPerUsd.toNumber(),
-          fxBufferPercent: quote.bufferPercent.toNumber(),
-          fxQuotedAt: quote.quotedAt,
-          fxSource: quote.source,
-        },
-      });
-    }
+    const quote = await quoteNgnToUsd(order.totalAmount.toString());
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        orderCurrency: "NGN",
+        paymentCurrency: "USD",
+        paymentAmount: quote.paymentAmountUsd.toNumber(),
+        fxRate: quote.ngnPerUsd.toNumber(),
+        fxBufferPercent: quote.bufferPercent.toNumber(),
+        fxQuotedAt: quote.quotedAt,
+        fxSource: quote.source,
+        ...(existingSession && String(existingSession.status || "").toLowerCase() !== "open"
+          ? { checkoutId: null }
+          : {}),
+      },
+    });
 
     const paymentCurrency = (process.env.PAYMENT_CURRENCY || "USD").toUpperCase();
     const usdAmount = quote.paymentAmountUsd.toNumber();
@@ -196,6 +186,8 @@ export async function POST(
       ipAddress,
     });
 
+    const estimatedCheckoutNgn = estimateNgnAtRate(usdAmount, quote.ngnPerUsd).toNumber();
+
     return NextResponse.json({
       checkoutUrl: result.data.checkoutUrl,
       checkoutId: result.data.checkoutId,
@@ -203,6 +195,7 @@ export async function POST(
       orderAmount: Number(order.totalAmount.toString()),
       paymentCurrency,
       paymentAmount: usdAmount,
+      estimatedCheckoutNgn,
     });
   } catch (error) {
     console.error("[CHECKOUT] Error:", error);

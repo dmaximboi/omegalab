@@ -7,6 +7,9 @@ import Decimal from "decimal.js";
 import {
   convertNgnToUsd,
   isRateSane,
+  isFxQuoteFresh,
+  getEffectiveCheckoutNgnPerUsd,
+  estimateNgnAtRate,
   parseNgnPerUsdFromPayload,
   quoteNgnToUsd,
   buildFxQuoteFromLocked,
@@ -58,13 +61,57 @@ async function run() {
       assert.strictEqual(parseNgnPerUsdFromPayload({ foo: 1 }), null);
     }),
 
+    test("getEffectiveCheckoutNgnPerUsd uses lowest rate with discount", () => {
+      const config: FxConfig = {
+        fallbackNgnPerUsd: 1600,
+        bufferPercent: 2,
+        checkoutRateDiscountPercent: 10,
+        quoteTtlMinutes: 60,
+      };
+      assert.strictEqual(getEffectiveCheckoutNgnPerUsd(1700, config).toNumber(), 1440);
+      assert.strictEqual(getEffectiveCheckoutNgnPerUsd(null, config).toNumber(), 1440);
+      assert.strictEqual(getEffectiveCheckoutNgnPerUsd(1500, config).toNumber(), 1350);
+    }),
+
+    test("180k NGN order covers catalogue total at Bachs-like NGN display", async () => {
+      const config: FxConfig = {
+        fallbackNgnPerUsd: 1600,
+        bufferPercent: 2,
+        checkoutRateDiscountPercent: 10,
+        quoteTtlMinutes: 60,
+      };
+      const fakeFetch: typeof fetch = async () =>
+        ({
+          ok: true,
+          json: async () => ({ rates: { NGN: 1600 } }),
+        }) as Response;
+
+      const quote = await quoteNgnToUsd(180000, config, fakeFetch);
+      const bachsDisplayNgn = estimateNgnAtRate(quote.paymentAmountUsd, 1455);
+
+      assert.ok(
+        bachsDisplayNgn.gte(new Decimal(180000)),
+        `expected Bachs NGN display >= 180000, got ${bachsDisplayNgn.toFixed(2)}`
+      );
+      assert.strictEqual(quote.paymentAmountUsd.toFixed(2), "127.50");
+    }),
+
+    test("isFxQuoteFresh respects TTL", () => {
+      const recent = new Date(Date.now() - 5 * 60 * 1000);
+      const stale = new Date(Date.now() - 90 * 60 * 1000);
+      assert.strictEqual(isFxQuoteFresh(recent, 60), true);
+      assert.strictEqual(isFxQuoteFresh(stale, 60), false);
+    }),
+
     test("quoteNgnToUsd uses live rate when fetch succeeds", async () => {
       const config: FxConfig = {
         rateApiUrl: "https://example.test/rates",
         fallbackNgnPerUsd: 2000,
         bufferPercent: 2,
+        checkoutRateDiscountPercent: 0,
         minNgnPerUsd: 100,
         maxNgnPerUsd: 5000,
+        quoteTtlMinutes: 60,
       };
       const fakeFetch: typeof fetch = async () =>
         ({
@@ -75,7 +122,6 @@ async function run() {
       const quote = await quoteNgnToUsd(160000, config, fakeFetch);
       assert.strictEqual(quote.source, "live");
       assert.strictEqual(quote.ngnPerUsd.toNumber(), 1600);
-      // 160000/1600 = 100; +2% = 102.00
       assert.strictEqual(quote.paymentAmountUsd.toFixed(2), "102.00");
     }),
 
@@ -84,8 +130,10 @@ async function run() {
         rateApiUrl: "https://example.test/rates",
         fallbackNgnPerUsd: 1600,
         bufferPercent: 0,
+        checkoutRateDiscountPercent: 0,
         minNgnPerUsd: 100,
         maxNgnPerUsd: 5000,
+        quoteTtlMinutes: 60,
       };
       const fakeFetch: typeof fetch = async () => {
         throw new Error("network down");
@@ -101,8 +149,10 @@ async function run() {
         rateApiUrl: "https://example.test/rates",
         fallbackNgnPerUsd: 1600,
         bufferPercent: 0,
+        checkoutRateDiscountPercent: 0,
         minNgnPerUsd: 100,
         maxNgnPerUsd: 5000,
+        quoteTtlMinutes: 60,
       };
       const fakeFetch: typeof fetch = async () =>
         ({

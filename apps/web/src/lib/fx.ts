@@ -17,31 +17,78 @@ export interface FxConfig {
   rateApiKey?: string;
   fallbackNgnPerUsd: number;
   bufferPercent: number;
-  /** Minimum / maximum acceptable NGN-per-USD (sanity bounds) */
+  /** Discount applied to NGN-per-USD before checkout conversion (higher USD charge). */
+  checkoutRateDiscountPercent: number;
   minNgnPerUsd?: number;
   maxNgnPerUsd?: number;
+  quoteTtlMinutes: number;
 }
 
 const DEFAULT_MIN = 100;
 const DEFAULT_MAX = 5000;
+const DEFAULT_QUOTE_TTL_MINUTES = 60;
 
 export function getFxConfig(): FxConfig {
   const fallback = Number(process.env.FX_FALLBACK_NGN_PER_USD || "1600");
   const buffer = Number(process.env.FX_BUFFER_PERCENT || "2");
+  const checkoutRateDiscountPercent = Number(process.env.FX_CHECKOUT_RATE_DISCOUNT_PERCENT || "10");
+  const quoteTtlMinutes = Number(process.env.FX_QUOTE_TTL_MINUTES || String(DEFAULT_QUOTE_TTL_MINUTES));
+
   if (!Number.isFinite(fallback) || fallback <= 0) {
     throw new Error("FX_FALLBACK_NGN_PER_USD must be a positive number");
   }
   if (!Number.isFinite(buffer) || buffer < 0 || buffer > 25) {
     throw new Error("FX_BUFFER_PERCENT must be between 0 and 25");
   }
+  if (!Number.isFinite(checkoutRateDiscountPercent) || checkoutRateDiscountPercent < 0 || checkoutRateDiscountPercent > 40) {
+    throw new Error("FX_CHECKOUT_RATE_DISCOUNT_PERCENT must be between 0 and 40");
+  }
+  if (!Number.isFinite(quoteTtlMinutes) || quoteTtlMinutes < 5 || quoteTtlMinutes > 180) {
+    throw new Error("FX_QUOTE_TTL_MINUTES must be between 5 and 180");
+  }
+
   return {
     rateApiUrl: process.env.FX_RATE_API_URL || undefined,
     rateApiKey: process.env.FX_RATE_API_KEY || undefined,
     fallbackNgnPerUsd: fallback,
     bufferPercent: buffer,
+    checkoutRateDiscountPercent,
     minNgnPerUsd: Number(process.env.FX_MIN_NGN_PER_USD || DEFAULT_MIN),
     maxNgnPerUsd: Number(process.env.FX_MAX_NGN_PER_USD || DEFAULT_MAX),
+    quoteTtlMinutes,
   };
+}
+
+/**
+ * Rate used when converting NGN catalogue totals to USD for Bachs.
+ * Uses the lowest trusted NGN-per-USD, then applies a checkout discount so
+ * Bachs' own NGN display (often a lower rate) still covers the order total.
+ */
+export function getEffectiveCheckoutNgnPerUsd(
+  liveNgnPerUsd: number | null,
+  config: FxConfig
+): Decimal {
+  const candidates = [config.fallbackNgnPerUsd];
+  if (liveNgnPerUsd !== null) candidates.push(liveNgnPerUsd);
+
+  const base = Math.min(...candidates);
+  const discount = new Decimal(config.checkoutRateDiscountPercent).div(100);
+  const effective = new Decimal(base).mul(new Decimal(1).minus(discount));
+
+  if (!effective.isFinite() || effective.lte(0)) {
+    throw new Error("Effective checkout FX rate is invalid");
+  }
+
+  return effective;
+}
+
+export function isFxQuoteFresh(quotedAt: Date, ttlMinutes = DEFAULT_QUOTE_TTL_MINUTES): boolean {
+  const ageMs = Date.now() - quotedAt.getTime();
+  return ageMs >= 0 && ageMs <= ttlMinutes * 60 * 1000;
+}
+
+export function estimateNgnAtRate(usdAmount: Decimal | number | string, ngnPerUsd: Decimal | number | string): Decimal {
+  return new Decimal(usdAmount.toString()).mul(new Decimal(ngnPerUsd.toString()));
 }
 
 /**
@@ -161,11 +208,10 @@ export async function quoteNgnToUsd(
 ): Promise<FxQuote> {
   const live = await fetchLiveNgnPerUsd(config, fetchImpl);
   const source: FxSource = live !== null ? "live" : "fallback";
-  const ngnPerUsd = new Decimal(live ?? config.fallbackNgnPerUsd);
+  const ngnPerUsd = getEffectiveCheckoutNgnPerUsd(live, config);
   const bufferPercent = new Decimal(config.bufferPercent);
   const paymentAmountUsd = convertNgnToUsd(ngnAmount, ngnPerUsd, bufferPercent);
 
-  // Bachs USD minimum is typically $1
   if (paymentAmountUsd.lt(1)) {
     throw new Error("Converted USD amount is below the $1.00 minimum");
   }

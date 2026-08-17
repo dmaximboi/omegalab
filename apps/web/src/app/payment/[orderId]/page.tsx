@@ -11,6 +11,7 @@ type OrderView = {
   orderCurrency?: string;
   paymentAmount?: number | null;
   paymentCurrency?: string | null;
+  estimatedCheckoutNgn?: number | null;
   status?: string;
 };
 
@@ -104,6 +105,7 @@ export default function PaymentProcessingPage() {
           paymentCurrency: data.paymentCurrency || "USD",
           totalAmount: data.orderAmount ?? prev?.totalAmount,
           orderCurrency: data.orderCurrency || "NGN",
+          estimatedCheckoutNgn: data.estimatedCheckoutNgn ?? prev?.estimatedCheckoutNgn,
         }));
       }
 
@@ -170,6 +172,7 @@ export default function PaymentProcessingPage() {
   const orderTotal = order?.totalAmount || 0;
   const paymentCurrency = order?.paymentCurrency || "USD";
   const paymentAmount = order?.paymentAmount;
+  const estimatedCheckoutNgn = order?.estimatedCheckoutNgn;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -184,7 +187,12 @@ export default function PaymentProcessingPage() {
         </p>
         {paymentAmount != null && (
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Charged via Bachs: {formatMoney(paymentAmount, paymentCurrency)}
+            Settlement amount: {formatMoney(paymentAmount, paymentCurrency)}
+          </p>
+        )}
+        {estimatedCheckoutNgn != null && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            If you pay in Naira at checkout, expect about {formatMoney(estimatedCheckoutNgn, "NGN")} or more.
           </p>
         )}
         <p className="text-sm text-blue-600 mt-4">You will be sent to Bachs to complete payment.</p>
