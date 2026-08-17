@@ -3,7 +3,7 @@ import { PrismaClient, OrderStatus } from "@prisma/client";
 import { cookies } from "next/headers";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { createCheckoutSession, getCheckoutSession } from "@/lib/bachs";
+import { createCheckoutSession, getCheckoutSession, getBachsMaxCheckoutUsd, isCheckoutAmountWithinLimit, mapCheckoutProviderError } from "@/lib/bachs";
 import { getAppUrl, normalizeNgPhone, timingSafeEqualString } from "@/lib/payment";
 import { logPayment } from "@/lib/fulfill-order";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -140,11 +140,38 @@ export async function POST(
 
     const paymentCurrency = (process.env.PAYMENT_CURRENCY || "USD").toUpperCase();
     const usdAmount = quote.paymentAmountUsd.toNumber();
+    const maxCheckoutUsd = getBachsMaxCheckoutUsd();
+    const orderAmountNgn = Number(order.totalAmount.toString());
+
+    if (!isCheckoutAmountWithinLimit(usdAmount)) {
+      await logPayment(prisma, {
+        orderId: order.id,
+        txRef: order.txRef,
+        status: "step:FAILED:checkout_amount_limit",
+        responseData: JSON.stringify({
+          paymentAmountUsd: usdAmount,
+          maxCheckoutUsd,
+          orderAmountNgn,
+        }),
+        ipAddress,
+      });
+      return NextResponse.json(
+        {
+          error: `Online checkout is limited to $${maxCheckoutUsd.toLocaleString("en-US")} USD per payment. Your order total is ₦${orderAmountNgn.toLocaleString("en-NG")} (about $${usdAmount.toFixed(2)} USD). Please contact us to pay for large orders.`,
+          code: "checkout_amount_limit",
+          maxCheckoutUsd,
+          paymentAmountUsd: usdAmount,
+          orderAmountNgn,
+        },
+        { status: 400 }
+      );
+    }
+
     const appUrl = getAppUrl();
     const customerEmail = order.customerEmail || order.user.email;
     const customerName = order.customerName || order.user.name || "Customer";
     const customerPhone = order.customerPhone ? normalizeNgPhone(order.customerPhone) : undefined;
-    const orderAmountNgn = order.totalAmount.toString();
+    const orderAmountNgnStr = order.totalAmount.toString();
 
     const result = await createCheckoutSession(
       {
@@ -160,7 +187,7 @@ export async function POST(
           order_id: order.id,
           tx_ref: order.txRef,
           order_currency: "NGN",
-          order_amount_ngn: orderAmountNgn,
+          order_amount_ngn: orderAmountNgnStr,
           fx_rate: quote.ngnPerUsd.toFixed(4),
           fx_live_rate: quote.liveNgnPerUsd.toFixed(4),
         },
@@ -180,8 +207,8 @@ export async function POST(
         ipAddress,
       });
       return NextResponse.json(
-        { error: "Payment could not be started. Please try again or contact support." },
-        { status: 502 }
+        { error: mapCheckoutProviderError(result.message), code: "checkout_provider_rejected" },
+        { status: result.message.toLowerCase().includes("deposit limit") ? 400 : 502 }
       );
     }
 
@@ -201,7 +228,7 @@ export async function POST(
       status: "step:PROCESSING",
       responseData: JSON.stringify({
         orderCurrency: "NGN",
-        orderAmountNgn,
+        orderAmountNgn: orderAmountNgnStr,
         paymentCurrency,
         paymentAmountUsd: usdAmount,
         fxRate: quote.ngnPerUsd.toString(),

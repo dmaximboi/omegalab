@@ -113,6 +113,27 @@ export function verifyBachsWebhookSignature(
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
+export function getBachsMaxCheckoutUsd(): number {
+  const max = Number(process.env.BACHS_MAX_CHECKOUT_USD || "1000");
+  if (!Number.isFinite(max) || max <= 0) return 1000;
+  return max;
+}
+
+export function mapCheckoutProviderError(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("deposit limit exceeded")) {
+    return "This order is above the current online payment limit. Please contact us to arrange payment for large orders.";
+  }
+  if (lower.includes("not held by this organization")) {
+    return "Payment currency is not available on the merchant account. Please contact support.";
+  }
+  return "Payment could not be started. Please try again or contact support.";
+}
+
+export function isCheckoutAmountWithinLimit(amountUsd: number): boolean {
+  return amountUsd > 0 && amountUsd <= getBachsMaxCheckoutUsd();
+}
+
 export async function createCheckoutSession(
   data: PaymentInitiation,
   idempotencyKey: string
