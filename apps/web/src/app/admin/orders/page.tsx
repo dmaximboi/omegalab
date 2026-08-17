@@ -90,7 +90,7 @@ const STEP_EXPLANATIONS: Record<string, { label: string; description: string; ic
   },
   "step:VERIFYING": {
     label: "Verifying Payment",
-    description: "Server is making a secure server-to-server API call to Bachs to verify the checkout session. Checking: (1) session status, (2) reference matches DB txRef, (3) amount >= order total using Decimal comparison, (4) currency is NGN, (5) metadata.order_id matches.",
+    description: "Server is making a secure server-to-server API call to Bachs to verify the checkout session. Checking: (1) session status, (2) reference matches DB txRef, (3) amount >= order total using Decimal comparison, (4) currency matches PAYMENT_CURRENCY, (5) metadata.order_id matches.",
     icon: ShieldCheck,
     color: "text-purple-600 bg-purple-50 border-purple-200",
   },
@@ -120,7 +120,7 @@ const STEP_EXPLANATIONS: Record<string, { label: string; description: string; ic
   },
   "step:FAILED:currency_mismatch": {
     label: "Payment Failed — Currency Mismatch",
-    description: "SECURITY ALERT: Payment was made in a different currency than NGN. This is a currency substitution attack — paying in a weaker currency to get goods cheaper.",
+    description: "SECURITY ALERT: Payment was made in a different currency than PAYMENT_CURRENCY. This is a currency substitution attack — paying in a weaker currency to get goods cheaper.",
     icon: AlertTriangle,
     color: "text-red-600 bg-red-50 border-red-200",
   },

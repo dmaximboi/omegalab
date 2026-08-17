@@ -1,7 +1,7 @@
 import Decimal from "decimal.js";
 import type { BachsCheckoutSession, PaymentVerification } from "./types";
 
-const EXPECTED_CURRENCY = (process.env.PAYMENT_CURRENCY || "NGN").toUpperCase();
+const EXPECTED_CURRENCY = (process.env.PAYMENT_CURRENCY || "USD").toUpperCase();
 
 export interface CheckoutSecurityChecks {
   sessionOpen: boolean;

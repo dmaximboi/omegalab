@@ -93,7 +93,7 @@ export async function POST(
       {
         txRef: order.txRef,
         amount,
-        currency: process.env.PAYMENT_CURRENCY || "NGN",
+        currency: process.env.PAYMENT_CURRENCY || "USD",
         customerEmail,
         customerName,
         customerPhone,

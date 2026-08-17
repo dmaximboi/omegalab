@@ -152,7 +152,7 @@ function getStepExplanation(step: string): string {
     "step:VERIFYING":
       "Server initiated a server-to-server verification call to Bachs (GET /v1/checkout-sessions/:id). Critical security step: verifies independently of the browser redirect.",
     "step:PAID":
-      "ALL security checks passed: (1) Bachs session status is completed, (2) checkout reference matches our txRef, (3) paid amount >= order total (Decimal comparison), (4) currency is NGN, (5) metadata.order_id matches. Order marked PAID.",
+      "ALL security checks passed: (1) Bachs session status is completed, (2) checkout reference matches our txRef, (3) paid amount >= order total (Decimal comparison), (4) currency matches PAYMENT_CURRENCY, (5) metadata.order_id matches. Order marked PAID.",
     "step:FAILED:not_success":
       "Bachs reported the checkout as not successful. Causes: insufficient funds, card declined, bank timeout, or customer abandonment.",
     "step:FAILED:txref_mismatch":
@@ -162,7 +162,7 @@ function getStepExplanation(step: string): string {
     "step:FAILED:amount_mismatch":
       "SECURITY ALERT: Amount paid is LESS than order total. Possible checkout tampering. Decimal.js comparison caught the discrepancy.",
     "step:FAILED:currency_mismatch":
-      "SECURITY ALERT: Payment received in non-NGN currency. Currency substitution attack detected.",
+      "SECURITY ALERT: Payment received in a currency that does not match PAYMENT_CURRENCY. Currency substitution attack detected.",
     "step:FAILED:expired":
       "Order exceeded 24-hour payment window and was automatically expired.",
     "webhook:successful":

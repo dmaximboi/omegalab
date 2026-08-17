@@ -3,7 +3,19 @@ import Decimal from "decimal.js";
 import { getCheckoutSession, isValidCheckoutId, type BachsCheckoutSession } from "@/lib/bachs";
 import { timingSafeEqualString } from "@/lib/payment";
 
-const EXPECTED_CURRENCY = (process.env.PAYMENT_CURRENCY || "NGN").toUpperCase();
+const EXPECTED_CURRENCY = (process.env.PAYMENT_CURRENCY || "USD").toUpperCase();
+
+function formatPaidAmount(amount: number): string {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: EXPECTED_CURRENCY,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return `${EXPECTED_CURRENCY} ${amount.toLocaleString()}`;
+  }
+}
 
 type PrismaLike = PrismaClient;
 
@@ -161,7 +173,7 @@ export async function verifyAndFulfillOrder(opts: {
         userId: order.userId,
         type: "order_success",
         title: "Payment Successful! ✓",
-        body: `Your order #${order.txRef} has been confirmed. Total: ₦${paid.toLocaleString()}. Your receipt is ready. [orderId:${order.id}]`,
+        body: `Your order #${order.txRef} has been confirmed. Total: ${formatPaidAmount(paid)}. Your receipt is ready. [orderId:${order.id}]`,
       },
     });
   } catch (err) {

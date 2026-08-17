@@ -11,7 +11,7 @@ export default function PaymentProcessingPage() {
   const router = useRouter();
   const orderId = params.orderId as string;
 
-  const [order, setOrder] = useState<{ totalAmount?: number; status?: string } | null>(null);
+  const [order, setOrder] = useState<{ totalAmount?: number; status?: string; currency?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "processing" | "success" | "failed">("pending");
@@ -145,7 +145,11 @@ export default function PaymentProcessingPage() {
           Order #<span className="font-mono">{orderId.slice(-8).toUpperCase()}</span>
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Total: ₦{order?.totalAmount?.toLocaleString() || "0"}
+          Total:{" "}
+          {new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: order?.currency || "USD",
+          }).format(order?.totalAmount || 0)}
         </p>
         <p className="text-sm text-blue-600 mt-4">You will be sent to Bachs to complete payment.</p>
       </div>

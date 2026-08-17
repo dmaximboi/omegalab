@@ -86,6 +86,7 @@ export async function GET(
       totalAmount: Number(order.totalAmount),
       status: order.status,
       txRef: order.txRef,
+      currency: (process.env.PAYMENT_CURRENCY || "USD").toUpperCase(),
       userEmail: customer.email,
       userName: customer.name,
       userPhone: customer.phone,
