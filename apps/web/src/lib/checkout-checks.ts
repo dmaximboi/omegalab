@@ -13,6 +13,7 @@ export interface ExpectedCheckout {
   paymentAmount: string | number;
   paymentCurrency: string;
   orderId: string;
+  orderAmountNgn: string;
 }
 
 export function evaluateCheckout(session: BachsCheckoutSession, expected: ExpectedCheckout) {
@@ -30,6 +31,7 @@ export function evaluateCheckout(session: BachsCheckoutSession, expected: Expect
   const expectedAmount = new Decimal(expected.paymentAmount.toString());
   const paidCurrency = normalizeStatus(session.currency || session.charge?.currency);
   const expectedCurrency = expected.paymentCurrency.trim().toLowerCase();
+  const metaOrderAmount = session.metadata?.order_amount_ngn;
 
   return {
     sessionOpen: status === "open",
@@ -38,6 +40,7 @@ export function evaluateCheckout(session: BachsCheckoutSession, expected: Expect
     amountOk: paidAmount.gt(0) && paidAmount.gte(expectedAmount),
     currencyOk: Boolean(paidCurrency) && paidCurrency === expectedCurrency,
     orderIdMatch: session.metadata?.order_id === expected.orderId,
+    orderAmountMatch: metaOrderAmount === expected.orderAmountNgn,
     paidAmount,
   };
 }

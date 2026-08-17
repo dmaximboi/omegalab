@@ -192,7 +192,7 @@ export default function PaymentProcessingPage() {
         )}
         {estimatedCheckoutNgn != null && (
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            If you pay in Naira at checkout, expect about {formatMoney(estimatedCheckoutNgn, "NGN")} or more.
+            Naira estimate at checkout: {formatMoney(estimatedCheckoutNgn, "NGN")}
           </p>
         )}
         <p className="text-sm text-blue-600 mt-4">You will be sent to Bachs to complete payment.</p>

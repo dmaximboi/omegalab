@@ -1,56 +1,58 @@
 import Decimal from "decimal.js";
 
-export type FxSource = "live" | "fallback";
+export const CHECKOUT_QUOTE_TTL_MINUTES = 5;
+
+export class FxRateError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FxRateError";
+  }
+}
 
 export interface FxQuote {
-  /** NGN per 1 USD */
   ngnPerUsd: Decimal;
+  liveNgnPerUsd: Decimal;
   bufferPercent: Decimal;
-  /** USD amount charged to Bachs (rounded up to cents) */
   paymentAmountUsd: Decimal;
-  source: FxSource;
   quotedAt: Date;
 }
 
 export interface FxConfig {
-  rateApiUrl?: string;
+  rateApiUrl: string;
   rateApiKey?: string;
-  fallbackNgnPerUsd: number;
   bufferPercent: number;
-  /** Discount applied to NGN-per-USD before checkout conversion (higher USD charge). */
   checkoutRateDiscountPercent: number;
-  minNgnPerUsd?: number;
-  maxNgnPerUsd?: number;
+  minNgnPerUsd: number;
+  maxNgnPerUsd: number;
   quoteTtlMinutes: number;
 }
 
 const DEFAULT_MIN = 100;
 const DEFAULT_MAX = 5000;
-const DEFAULT_QUOTE_TTL_MINUTES = 60;
 
 export function getFxConfig(): FxConfig {
-  const fallback = Number(process.env.FX_FALLBACK_NGN_PER_USD || "1600");
+  const rateApiUrl = process.env.FX_RATE_API_URL?.trim();
+  if (!rateApiUrl) {
+    throw new FxRateError("FX_RATE_API_URL is not configured");
+  }
+
   const buffer = Number(process.env.FX_BUFFER_PERCENT || "2");
   const checkoutRateDiscountPercent = Number(process.env.FX_CHECKOUT_RATE_DISCOUNT_PERCENT || "10");
-  const quoteTtlMinutes = Number(process.env.FX_QUOTE_TTL_MINUTES || String(DEFAULT_QUOTE_TTL_MINUTES));
+  const quoteTtlMinutes = Number(process.env.FX_QUOTE_TTL_MINUTES || String(CHECKOUT_QUOTE_TTL_MINUTES));
 
-  if (!Number.isFinite(fallback) || fallback <= 0) {
-    throw new Error("FX_FALLBACK_NGN_PER_USD must be a positive number");
-  }
   if (!Number.isFinite(buffer) || buffer < 0 || buffer > 25) {
-    throw new Error("FX_BUFFER_PERCENT must be between 0 and 25");
+    throw new FxRateError("FX_BUFFER_PERCENT must be between 0 and 25");
   }
   if (!Number.isFinite(checkoutRateDiscountPercent) || checkoutRateDiscountPercent < 0 || checkoutRateDiscountPercent > 40) {
-    throw new Error("FX_CHECKOUT_RATE_DISCOUNT_PERCENT must be between 0 and 40");
+    throw new FxRateError("FX_CHECKOUT_RATE_DISCOUNT_PERCENT must be between 0 and 40");
   }
-  if (!Number.isFinite(quoteTtlMinutes) || quoteTtlMinutes < 5 || quoteTtlMinutes > 180) {
-    throw new Error("FX_QUOTE_TTL_MINUTES must be between 5 and 180");
+  if (!Number.isFinite(quoteTtlMinutes) || quoteTtlMinutes < 1 || quoteTtlMinutes > 15) {
+    throw new FxRateError("FX_QUOTE_TTL_MINUTES must be between 1 and 15");
   }
 
   return {
-    rateApiUrl: process.env.FX_RATE_API_URL || undefined,
+    rateApiUrl,
     rateApiKey: process.env.FX_RATE_API_KEY || undefined,
-    fallbackNgnPerUsd: fallback,
     bufferPercent: buffer,
     checkoutRateDiscountPercent,
     minNgnPerUsd: Number(process.env.FX_MIN_NGN_PER_USD || DEFAULT_MIN),
@@ -59,30 +61,22 @@ export function getFxConfig(): FxConfig {
   };
 }
 
-/**
- * Rate used when converting NGN catalogue totals to USD for Bachs.
- * Uses the lowest trusted NGN-per-USD, then applies a checkout discount so
- * Bachs' own NGN display (often a lower rate) still covers the order total.
- */
-export function getEffectiveCheckoutNgnPerUsd(
-  liveNgnPerUsd: number | null,
-  config: FxConfig
-): Decimal {
-  const candidates = [config.fallbackNgnPerUsd];
-  if (liveNgnPerUsd !== null) candidates.push(liveNgnPerUsd);
+export function getEffectiveCheckoutNgnPerUsd(liveNgnPerUsd: number, config: FxConfig): Decimal {
+  if (!Number.isFinite(liveNgnPerUsd) || liveNgnPerUsd <= 0) {
+    throw new FxRateError("Live FX rate is invalid");
+  }
 
-  const base = Math.min(...candidates);
   const discount = new Decimal(config.checkoutRateDiscountPercent).div(100);
-  const effective = new Decimal(base).mul(new Decimal(1).minus(discount));
+  const effective = new Decimal(liveNgnPerUsd).mul(new Decimal(1).minus(discount));
 
   if (!effective.isFinite() || effective.lte(0)) {
-    throw new Error("Effective checkout FX rate is invalid");
+    throw new FxRateError("Effective checkout FX rate is invalid");
   }
 
   return effective;
 }
 
-export function isFxQuoteFresh(quotedAt: Date, ttlMinutes = DEFAULT_QUOTE_TTL_MINUTES): boolean {
+export function isFxQuoteFresh(quotedAt: Date, ttlMinutes = CHECKOUT_QUOTE_TTL_MINUTES): boolean {
   const ageMs = Date.now() - quotedAt.getTime();
   return ageMs >= 0 && ageMs <= ttlMinutes * 60 * 1000;
 }
@@ -91,10 +85,6 @@ export function estimateNgnAtRate(usdAmount: Decimal | number | string, ngnPerUs
   return new Decimal(usdAmount.toString()).mul(new Decimal(ngnPerUsd.toString()));
 }
 
-/**
- * Convert NGN catalogue total → USD charge amount.
- * Applies buffer then rounds UP to the nearest cent so we never undercharge.
- */
 export function convertNgnToUsd(
   ngnAmount: number | string | Decimal,
   ngnPerUsd: number | string | Decimal,
@@ -104,33 +94,19 @@ export function convertNgnToUsd(
   const rate = new Decimal(ngnPerUsd.toString());
   const buffer = new Decimal(bufferPercent.toString());
 
-  if (!ngn.isFinite() || ngn.lte(0)) throw new Error("Invalid NGN amount");
-  if (!rate.isFinite() || rate.lte(0)) throw new Error("Invalid FX rate");
-  if (!buffer.isFinite() || buffer.lt(0)) throw new Error("Invalid FX buffer");
+  if (!ngn.isFinite() || ngn.lte(0)) throw new FxRateError("Invalid NGN amount");
+  if (!rate.isFinite() || rate.lte(0)) throw new FxRateError("Invalid FX rate");
+  if (!buffer.isFinite() || buffer.lt(0)) throw new FxRateError("Invalid FX buffer");
 
   const usd = ngn.div(rate);
   const withBuffer = usd.mul(new Decimal(1).plus(buffer.div(100)));
-  // Round UP to cents
   return withBuffer.mul(100).ceil().div(100);
 }
 
-export function isRateSane(
-  ngnPerUsd: number,
-  min = DEFAULT_MIN,
-  max = DEFAULT_MAX
-): boolean {
+export function isRateSane(ngnPerUsd: number, min = DEFAULT_MIN, max = DEFAULT_MAX): boolean {
   return Number.isFinite(ngnPerUsd) && ngnPerUsd >= min && ngnPerUsd <= max;
 }
 
-/**
- * Parse common FX API shapes into NGN-per-USD.
- * Supported:
- * - { rates: { NGN: 1600 } }  (USD base → NGN)
- * - { conversion_rates: { NGN: 1600 } }
- * - { NGN: 1600 }
- * - { rate: 1600 } / { ngn_per_usd: 1600 }
- * - { data: { NGN: 1600 } } / { data: { rate: 1600 } }
- */
 export function parseNgnPerUsdFromPayload(payload: unknown): number | null {
   if (!payload || typeof payload !== "object") return null;
   const obj = payload as Record<string, unknown>;
@@ -141,7 +117,7 @@ export function parseNgnPerUsdFromPayload(payload: unknown): number | null {
     numberOrNull(obj.rate) ??
     numberOrNull(obj.NGN);
 
-  if (direct !== null) return direct;
+  if (direct !== null) return normalizeNgnPerUsd(direct);
 
   for (const key of ["rates", "conversion_rates", "data", "result"] as const) {
     const nested = obj[key];
@@ -152,11 +128,17 @@ export function parseNgnPerUsdFromPayload(payload: unknown): number | null {
         numberOrNull(n.ngn) ??
         numberOrNull(n.rate) ??
         numberOrNull(n.ngn_per_usd);
-      if (fromNested !== null) return fromNested;
+      if (fromNested !== null) return normalizeNgnPerUsd(fromNested);
     }
   }
 
   return null;
+}
+
+function normalizeNgnPerUsd(value: number): number | null {
+  if (!Number.isFinite(value) || value <= 0) return null;
+  if (value < 1) return 1 / value;
+  return value;
 }
 
 function numberOrNull(v: unknown): number | null {
@@ -168,12 +150,7 @@ function numberOrNull(v: unknown): number | null {
   return null;
 }
 
-export async function fetchLiveNgnPerUsd(
-  config: FxConfig,
-  fetchImpl: typeof fetch = fetch
-): Promise<number | null> {
-  if (!config.rateApiUrl) return null;
-
+export async function fetchLiveNgnPerUsd(config: FxConfig, fetchImpl: typeof fetch = fetch): Promise<number> {
   try {
     const headers: Record<string, string> = { Accept: "application/json" };
     if (config.rateApiKey) {
@@ -190,14 +167,23 @@ export async function fetchLiveNgnPerUsd(
     });
     clearTimeout(timeout);
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      throw new FxRateError("FX rate provider returned an error");
+    }
+
     const json = await res.json().catch(() => null);
     const rate = parseNgnPerUsdFromPayload(json);
-    if (rate === null) return null;
-    if (!isRateSane(rate, config.minNgnPerUsd, config.maxNgnPerUsd)) return null;
+    if (rate === null) {
+      throw new FxRateError("FX rate provider returned an unrecognised payload");
+    }
+    if (!isRateSane(rate, config.minNgnPerUsd, config.maxNgnPerUsd)) {
+      throw new FxRateError("FX rate provider returned an out-of-range rate");
+    }
+
     return rate;
-  } catch {
-    return null;
+  } catch (error) {
+    if (error instanceof FxRateError) throw error;
+    throw new FxRateError("FX rate provider is unavailable");
   }
 }
 
@@ -206,39 +192,82 @@ export async function quoteNgnToUsd(
   config: FxConfig = getFxConfig(),
   fetchImpl: typeof fetch = fetch
 ): Promise<FxQuote> {
-  const live = await fetchLiveNgnPerUsd(config, fetchImpl);
-  const source: FxSource = live !== null ? "live" : "fallback";
-  const ngnPerUsd = getEffectiveCheckoutNgnPerUsd(live, config);
+  const liveNgnPerUsd = await fetchLiveNgnPerUsd(config, fetchImpl);
+  const ngnPerUsd = getEffectiveCheckoutNgnPerUsd(liveNgnPerUsd, config);
   const bufferPercent = new Decimal(config.bufferPercent);
   const paymentAmountUsd = convertNgnToUsd(ngnAmount, ngnPerUsd, bufferPercent);
 
   if (paymentAmountUsd.lt(1)) {
-    throw new Error("Converted USD amount is below the $1.00 minimum");
+    throw new FxRateError("Converted USD amount is below the $1.00 minimum");
   }
 
   return {
     ngnPerUsd,
+    liveNgnPerUsd: new Decimal(liveNgnPerUsd),
     bufferPercent,
     paymentAmountUsd,
-    source,
     quotedAt: new Date(),
   };
 }
 
-export function buildFxQuoteFromLocked(opts: {
-  ngnAmount: number | string;
-  ngnPerUsd: number | string;
-  bufferPercent: number | string;
-  source: FxSource;
-  quotedAt: Date;
-}): FxQuote {
-  const ngnPerUsd = new Decimal(opts.ngnPerUsd.toString());
-  const bufferPercent = new Decimal(opts.bufferPercent.toString());
-  return {
-    ngnPerUsd,
-    bufferPercent,
-    paymentAmountUsd: convertNgnToUsd(opts.ngnAmount, ngnPerUsd, bufferPercent),
-    source: opts.source,
-    quotedAt: opts.quotedAt,
-  };
+export interface LockedQuoteFields {
+  totalAmount: { toString(): string };
+  paymentAmount?: { toString(): string } | null;
+  fxRate?: { toString(): string } | null;
+  fxBufferPercent?: { toString(): string } | null;
+  fxQuotedAt?: Date | null;
+}
+
+export function recomputeLockedPaymentUsd(order: LockedQuoteFields): Decimal | null {
+  if (order.fxRate == null || order.fxBufferPercent == null) return null;
+  try {
+    return convertNgnToUsd(
+      order.totalAmount.toString(),
+      order.fxRate.toString(),
+      order.fxBufferPercent.toString()
+    );
+  } catch {
+    return null;
+  }
+}
+
+export function validateLockedQuoteIntegrity(order: LockedQuoteFields): boolean {
+  if (!order.paymentAmount || !order.fxRate || order.fxBufferPercent == null || !order.fxQuotedAt) {
+    return false;
+  }
+
+  const stored = new Decimal(order.paymentAmount.toString());
+  const recomputed = recomputeLockedPaymentUsd(order);
+  if (!recomputed || !stored.eq(recomputed)) {
+    return false;
+  }
+
+  return true;
+}
+
+export function validateLockedQuote(
+  order: LockedQuoteFields,
+  ttlMinutes = CHECKOUT_QUOTE_TTL_MINUTES
+): boolean {
+  if (!validateLockedQuoteIntegrity(order)) {
+    return false;
+  }
+  if (!order.fxQuotedAt || !isFxQuoteFresh(order.fxQuotedAt, ttlMinutes)) {
+    return false;
+  }
+  return true;
+}
+
+export function sessionAmountMatchesLocked(
+  sessionAmount: string | number | null | undefined,
+  lockedUsd: { toString(): string }
+): boolean {
+  if (sessionAmount == null || sessionAmount === "") return false;
+  try {
+    const sessionUsd = new Decimal(sessionAmount.toString());
+    const locked = new Decimal(lockedUsd.toString());
+    return sessionUsd.gte(locked);
+  } catch {
+    return false;
+  }
 }

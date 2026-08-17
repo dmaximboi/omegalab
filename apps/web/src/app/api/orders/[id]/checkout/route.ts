@@ -7,7 +7,14 @@ import { createCheckoutSession, getCheckoutSession } from "@/lib/bachs";
 import { getAppUrl, normalizeNgPhone, timingSafeEqualString } from "@/lib/payment";
 import { logPayment } from "@/lib/fulfill-order";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { quoteNgnToUsd, estimateNgnAtRate } from "@/lib/fx";
+import {
+  quoteNgnToUsd,
+  estimateNgnAtRate,
+  validateLockedQuote,
+  sessionAmountMatchesLocked,
+  FxRateError,
+  getFxConfig,
+} from "@/lib/fx";
 
 export const dynamic = "force-dynamic";
 
@@ -77,27 +84,35 @@ export async function POST(
       return NextResponse.json({ error: "Order has expired" }, { status: 400 });
     }
 
+    const fxConfig = getFxConfig();
     let existingSession = null;
+
     if (order.checkoutId) {
       existingSession = await getCheckoutSession(order.checkoutId);
       const status = String(existingSession?.status || "").toLowerCase();
-      if (existingSession?.checkout_url && status === "open") {
+      const quoteValid = validateLockedQuote(order, fxConfig.quoteTtlMinutes);
+      const sessionAmount = existingSession?.amount ?? existingSession?.charge?.amount ?? null;
+      const amountMatches =
+        order.paymentAmount &&
+        sessionAmountMatchesLocked(sessionAmount, order.paymentAmount);
+
+      if (existingSession?.checkout_url && status === "open" && quoteValid && amountMatches) {
         return NextResponse.json({
           checkoutUrl: existingSession.checkout_url,
           checkoutId: order.checkoutId,
           orderCurrency: order.orderCurrency || "NGN",
           orderAmount: Number(order.totalAmount.toString()),
           paymentCurrency: order.paymentCurrency || "USD",
-          paymentAmount: order.paymentAmount ? Number(order.paymentAmount.toString()) : undefined,
-          estimatedCheckoutNgn:
-            order.paymentAmount && order.fxRate
-              ? estimateNgnAtRate(order.paymentAmount.toString(), order.fxRate.toString()).toNumber()
-              : undefined,
+          paymentAmount: Number(order.paymentAmount!.toString()),
+          estimatedCheckoutNgn: estimateNgnAtRate(
+            order.paymentAmount!.toString(),
+            order.fxRate!.toString()
+          ).toNumber(),
         });
       }
     }
 
-    const quote = await quoteNgnToUsd(order.totalAmount.toString());
+    const quote = await quoteNgnToUsd(order.totalAmount.toString(), fxConfig);
     await prisma.order.update({
       where: { id: order.id },
       data: {
@@ -107,10 +122,8 @@ export async function POST(
         fxRate: quote.ngnPerUsd.toNumber(),
         fxBufferPercent: quote.bufferPercent.toNumber(),
         fxQuotedAt: quote.quotedAt,
-        fxSource: quote.source,
-        ...(existingSession && String(existingSession.status || "").toLowerCase() !== "open"
-          ? { checkoutId: null }
-          : {}),
+        fxSource: "live",
+        ...(order.checkoutId ? { checkoutId: null } : {}),
       },
     });
 
@@ -120,6 +133,7 @@ export async function POST(
     const customerEmail = order.customerEmail || order.user.email;
     const customerName = order.customerName || order.user.name || "Customer";
     const customerPhone = order.customerPhone ? normalizeNgPhone(order.customerPhone) : undefined;
+    const orderAmountNgn = order.totalAmount.toString();
 
     const result = await createCheckoutSession(
       {
@@ -135,14 +149,14 @@ export async function POST(
           order_id: order.id,
           tx_ref: order.txRef,
           order_currency: "NGN",
-          order_amount_ngn: order.totalAmount.toString(),
+          order_amount_ngn: orderAmountNgn,
           fx_rate: quote.ngnPerUsd.toFixed(4),
-          fx_source: quote.source,
+          fx_live_rate: quote.liveNgnPerUsd.toFixed(4),
         },
       },
       order.checkoutId
-        ? `order:${order.id}:${order.txRef}:next:${order.checkoutId}`
-        : `order:${order.id}:${order.txRef}:usd:${usdAmount}`
+        ? `order:${order.id}:${order.txRef}:next:${order.checkoutId}:${usdAmount}`
+        : `order:${order.id}:${order.txRef}:usd:${usdAmount}:${quote.quotedAt.getTime()}`
     );
 
     if (result.status !== "success" || !result.data) {
@@ -176,28 +190,33 @@ export async function POST(
       status: "step:PROCESSING",
       responseData: JSON.stringify({
         orderCurrency: "NGN",
-        orderAmountNgn: order.totalAmount.toString(),
+        orderAmountNgn,
         paymentCurrency,
         paymentAmountUsd: usdAmount,
         fxRate: quote.ngnPerUsd.toString(),
+        fxLiveRate: quote.liveNgnPerUsd.toString(),
         fxBufferPercent: quote.bufferPercent.toString(),
-        fxSource: quote.source,
       }),
       ipAddress,
     });
-
-    const estimatedCheckoutNgn = estimateNgnAtRate(usdAmount, quote.ngnPerUsd).toNumber();
 
     return NextResponse.json({
       checkoutUrl: result.data.checkoutUrl,
       checkoutId: result.data.checkoutId,
       orderCurrency: "NGN",
-      orderAmount: Number(order.totalAmount.toString()),
+      orderAmount: Number(orderAmountNgn),
       paymentCurrency,
       paymentAmount: usdAmount,
-      estimatedCheckoutNgn,
+      estimatedCheckoutNgn: estimateNgnAtRate(usdAmount, quote.liveNgnPerUsd).toNumber(),
     });
   } catch (error) {
+    if (error instanceof FxRateError) {
+      console.error("[CHECKOUT] FX error:", error.message);
+      return NextResponse.json(
+        { error: "Exchange rate is unavailable. Please try again in a few minutes." },
+        { status: 503 }
+      );
+    }
     console.error("[CHECKOUT] Error:", error);
     return NextResponse.json(
       { error: "Payment could not be started. Please try again or contact support." },

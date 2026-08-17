@@ -2,6 +2,7 @@ import { PrismaClient, OrderStatus } from "@prisma/client";
 import { getCheckoutSession, isValidCheckoutId, type BachsCheckoutSession } from "@/lib/bachs";
 import { timingSafeEqualString } from "@/lib/payment";
 import { evaluateCheckout } from "@/lib/checkout-checks";
+import { validateLockedQuoteIntegrity } from "@/lib/fx";
 
 export { evaluateCheckout } from "@/lib/checkout-checks";
 
@@ -52,6 +53,9 @@ export async function verifyAndFulfillOrder(opts: {
     paymentAmount?: { toString(): string } | null;
     paymentCurrency?: string | null;
     orderCurrency?: string | null;
+    fxRate?: { toString(): string } | null;
+    fxBufferPercent?: { toString(): string } | null;
+    fxQuotedAt?: Date | null;
   };
   checkoutId: string;
   ipAddress?: string;
@@ -77,6 +81,17 @@ export async function verifyAndFulfillOrder(opts: {
 
   if (order.paymentVerified) {
     return { ok: true, alreadyPaid: true };
+  }
+
+  if (!validateLockedQuoteIntegrity(order)) {
+    await logPayment(prisma, {
+      orderId: order.id,
+      txRef: order.txRef,
+      providerRef: checkoutId,
+      status: "step:VERIFY_REJECTED:invalid_locked_quote",
+      ipAddress,
+    });
+    return { ok: false, reason: "invalid_locked_quote" };
   }
 
   if (!order.paymentAmount || !order.paymentCurrency) {
@@ -108,13 +123,23 @@ export async function verifyAndFulfillOrder(opts: {
     paymentAmount: order.paymentAmount.toString(),
     paymentCurrency,
     orderId: order.id,
+    orderAmountNgn: order.totalAmount.toString(),
   });
 
   if (checks.sessionOpen) {
     return { ok: false, reason: "still_open" };
   }
 
-  if (!(checks.isSuccess && checks.txRefMatch && checks.amountOk && checks.currencyOk && checks.orderIdMatch)) {
+  if (
+    !(
+      checks.isSuccess &&
+      checks.txRefMatch &&
+      checks.amountOk &&
+      checks.currencyOk &&
+      checks.orderIdMatch &&
+      checks.orderAmountMatch
+    )
+  ) {
     const failReason = !checks.isSuccess
       ? "not_success"
       : !checks.txRefMatch
@@ -123,7 +148,9 @@ export async function verifyAndFulfillOrder(opts: {
           ? "amount_mismatch"
           : !checks.currencyOk
             ? "currency_mismatch"
-            : "order_mismatch";
+            : !checks.orderIdMatch
+              ? "order_mismatch"
+              : "order_amount_mismatch";
 
     await logPayment(prisma, {
       orderId: order.id,
@@ -244,6 +271,6 @@ export async function logSecurityEvent(
       },
     });
   } catch {
-    // non-blocking
+    return;
   }
 }
