@@ -15,6 +15,7 @@ import {
   FxRateError,
   getFxConfig,
 } from "@/lib/fx";
+import { syncOrderCheckoutState } from "@/lib/order-checkout-sync";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,7 @@ export async function POST(
     const session = await getServerSession(authOptions);
     const prisma = getPrisma();
 
-    const order = await prisma.order.findUnique({
+    let order = await prisma.order.findUnique({
       where: { id: orderId },
       include: { user: { select: { email: true, name: true } } },
     });
@@ -83,6 +84,16 @@ export async function POST(
     if (orderAge > 24 * 60 * 60 * 1000) {
       return NextResponse.json({ error: "Order has expired" }, { status: 400 });
     }
+
+    await syncOrderCheckoutState(prisma, order);
+    const refreshedOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { user: { select: { email: true, name: true } } },
+    });
+    if (!refreshedOrder) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+    order = refreshedOrder;
 
     const fxConfig = getFxConfig();
     let existingSession = null;

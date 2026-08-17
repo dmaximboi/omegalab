@@ -14,6 +14,9 @@ export default function OrderPage() {
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState(false);
   const [error, setError] = useState("");
+  const [pendingOrders, setPendingOrders] = useState<
+    { orderId: string; txRef: string; amount: number; status: string; resumeUrl: string }[]
+  >([]);
   const isSubmitting = useRef(false);
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -70,6 +73,7 @@ export default function OrderPage() {
     isSubmitting.current = true;
     setCheckingOut(true);
     setError("");
+    setPendingOrders([]);
 
     try {
       const res = await fetch("/api/orders", {
@@ -81,12 +85,16 @@ export default function OrderPage() {
         }),
       });
 
+      const errData = await res.json().catch(() => null);
+
       if (!res.ok) {
-        const errData = await res.json().catch(() => null);
+        if (Array.isArray(errData?.pendingOrders)) {
+          setPendingOrders(errData.pendingOrders);
+        }
         throw new Error(errData?.error || "Failed to create order");
       }
 
-      const data = await res.json();
+      const data = errData;
       router.push(`/payment/${data.orderId}`);
     } catch (err: any) {
       setError(err.message || "Could not create order. Please try again.");
@@ -132,6 +140,23 @@ export default function OrderPage() {
           {error && (
             <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg text-sm">
               {error}
+              {pendingOrders.length > 0 && (
+                <div className="mt-4 space-y-2 text-left">
+                  <p className="font-medium text-red-800 dark:text-red-300">Pending payments</p>
+                  {pendingOrders.map((pending) => (
+                    <Link
+                      key={pending.orderId}
+                      href={pending.resumeUrl}
+                      className="block rounded-lg border border-red-200 dark:border-red-800 bg-white dark:bg-gray-900 px-4 py-3 hover:bg-red-50 dark:hover:bg-red-950/40"
+                    >
+                      <div className="font-medium">₦{pending.amount.toLocaleString()}</div>
+                      <div className="text-xs opacity-80">
+                        {pending.status} · {pending.txRef}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

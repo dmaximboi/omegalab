@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
 import { cookies } from "next/headers";
 import { timingSafeEqualString } from "@/lib/payment";
+import { syncOrderCheckoutState } from "@/lib/order-checkout-sync";
 
 export const dynamic = "force-dynamic";
 
@@ -74,28 +75,50 @@ export async function GET(
       }
     }
 
-    // Only expose fields needed by the frontend — never leak paymentToken or receiptSalt
+    await syncOrderCheckoutState(getPrisma(), order);
+    const syncedOrder = await getPrisma().order.findUnique({
+      where: { id: params.id },
+      include: {
+        user: { select: { email: true, name: true } },
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                images: {
+                  select: { url: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!syncedOrder) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
     const customer = {
-      name: order.customerName || order.user?.name || "Customer",
-      email: order.customerEmail || order.user?.email || "",
-      phone: order.customerPhone || "",
+      name: syncedOrder.customerName || syncedOrder.user?.name || "Customer",
+      email: syncedOrder.customerEmail || syncedOrder.user?.email || "",
+      phone: syncedOrder.customerPhone || "",
     };
 
     return NextResponse.json({
-      id: order.id,
-      // Catalogue / order total is always NGN
-      totalAmount: Number(order.totalAmount),
-      orderCurrency: order.orderCurrency || "NGN",
-      // Locked Bachs charge (USD) when quote exists
-      paymentCurrency: order.paymentCurrency || null,
-      paymentAmount: order.paymentAmount ? Number(order.paymentAmount.toString()) : null,
-      status: order.status,
-      txRef: order.txRef,
+      id: syncedOrder.id,
+      totalAmount: Number(syncedOrder.totalAmount),
+      orderCurrency: syncedOrder.orderCurrency || "NGN",
+      paymentCurrency: syncedOrder.paymentCurrency || null,
+      paymentAmount: syncedOrder.paymentAmount ? Number(syncedOrder.paymentAmount.toString()) : null,
+      status: syncedOrder.status,
+      txRef: syncedOrder.txRef,
       userEmail: customer.email,
       userName: customer.name,
       userPhone: customer.phone,
-      createdAt: order.createdAt.toISOString(),
-      items: order.items.map((item: (typeof order.items)[number]) => ({
+      createdAt: syncedOrder.createdAt.toISOString(),
+      resumeUrl: syncedOrder.paymentVerified ? null : `/payment/${syncedOrder.id}`,
+      items: syncedOrder.items.map((item: (typeof syncedOrder.items)[number]) => ({
         id: item.id,
         quantity: item.quantity,
         unitPrice: Number(item.unitPrice),

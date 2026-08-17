@@ -99,6 +99,10 @@ export async function POST(request: Request) {
           : null;
 
       if (order && !order.paymentVerified) {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { status: OrderStatus.INITIATED, checkoutId: null },
+        });
         await logPayment(prisma, {
           orderId: order.id,
           txRef: order.txRef,

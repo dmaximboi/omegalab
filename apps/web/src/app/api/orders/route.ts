@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import crypto from "crypto";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { syncOpenOrdersForEmail, syncOrderCheckoutState } from "@/lib/order-checkout-sync";
 
 export const dynamic = "force-dynamic";
 
@@ -28,11 +29,6 @@ function getPrisma() {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_OPEN_ORDERS_PER_EMAIL = 3;
 
-/**
- * Guest or signed-in checkout.
- * Buyer identity for THIS transaction is stored on the Order snapshot fields.
- * Shared emails no longer overwrite User.name (avoids mixed-tx confusion).
- */
 export async function POST(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for");
   const ipAddress = forwarded?.split(",")[0]?.trim() || "unknown";
@@ -183,47 +179,52 @@ export async function POST(request: Request) {
       customerAddress,
     };
 
-    // Idempotency: same user + same cart total + same snapshot email within 5 min
+    await syncOpenOrdersForEmail(prisma, customerEmail);
+
     const recentOrder = await prisma.order.findFirst({
       where: {
         userId: orderUser.id,
         customerEmail,
-        status: OrderStatus.INITIATED,
+        status: { in: [OrderStatus.INITIATED, OrderStatus.PROCESSING] },
         createdAt: { gte: new Date(Date.now() - 5 * 60 * 1000) },
         totalAmount: totalAsNumber,
+        paymentVerified: false,
       },
     });
 
     if (recentOrder) {
-      // Refresh snapshot on the reused order so this checkout's details win
-      await prisma.order
-        .update({
-          where: { id: recentOrder.id },
-          data: snapshot,
-        })
-        .catch(() => {});
+      await syncOrderCheckoutState(prisma, recentOrder);
+      const refreshed = await prisma.order.findUnique({ where: { id: recentOrder.id } });
+      if (refreshed && !refreshed.paymentVerified) {
+        await prisma.order
+          .update({
+            where: { id: refreshed.id },
+            data: snapshot,
+          })
+          .catch(() => {});
 
-      const response = NextResponse.json({
-        orderId: recentOrder.id,
-        txRef: recentOrder.txRef,
-        amount: totalAsNumber,
-        userEmail: customerEmail,
-        userName: customerName,
-        userPhone: customerPhone,
-      });
-      if (recentOrder.paymentToken) {
-        response.cookies.set("payment_token", recentOrder.paymentToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          maxAge: 60 * 60,
-          path: "/",
+        const response = NextResponse.json({
+          orderId: refreshed.id,
+          txRef: refreshed.txRef,
+          amount: totalAsNumber,
+          userEmail: customerEmail,
+          userName: customerName,
+          userPhone: customerPhone,
+          resumed: true,
         });
+        if (refreshed.paymentToken) {
+          response.cookies.set("payment_token", refreshed.paymentToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 60 * 60,
+            path: "/",
+          });
+        }
+        return response;
       }
-      return response;
     }
 
-    // Limit unfinished checkouts sharing one email (after idempotency reuse)
     const openCount = await prisma.order.count({
       where: {
         customerEmail,
@@ -232,12 +233,36 @@ export async function POST(request: Request) {
       },
     });
     if (openCount >= MAX_OPEN_ORDERS_PER_EMAIL) {
+      const pendingOrders = await prisma.order.findMany({
+        where: {
+          customerEmail,
+          paymentVerified: false,
+          status: { in: [OrderStatus.INITIATED, OrderStatus.PROCESSING, OrderStatus.VERIFYING] },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          txRef: true,
+          totalAmount: true,
+          status: true,
+          createdAt: true,
+        },
+      });
+
       return NextResponse.json(
         {
-          error:
-            "You already have open checkouts with this email. Complete or wait for them to expire before starting another.",
+          error: "You have pending payments for this email. Resume one below or wait for it to expire.",
+          pendingOrders: pendingOrders.map((o) => ({
+            orderId: o.id,
+            txRef: o.txRef,
+            amount: Number(o.totalAmount.toString()),
+            status: o.status,
+            createdAt: o.createdAt.toISOString(),
+            resumeUrl: `/payment/${o.id}`,
+          })),
         },
-        { status: 429 }
+        { status: 409 }
       );
     }
 
