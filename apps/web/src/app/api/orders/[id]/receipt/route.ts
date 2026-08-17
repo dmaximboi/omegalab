@@ -69,6 +69,7 @@ export async function GET(
         totalAmount: parseFloat(order.totalAmount.toString()),
         paymentVerified: order.paymentVerified,
         flwRef: order.flwRef,
+        checkoutId: order.checkoutId,
         createdAt: order.createdAt,
         verifiedAt: order.verifiedAt,
         customer: {

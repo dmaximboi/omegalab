@@ -21,7 +21,7 @@ export function generateCsp(nonce?: string): string {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: https: blob:",
-    "connect-src 'self' https://api.flutterwave.com https://*.upstash.io",
+    "connect-src 'self' https://api.bachs.io https://sandbox-api.bachs.io https://*.upstash.io",
     "frame-ancestors 'self'",
     "form-action 'self'",
     "base-uri 'self'",

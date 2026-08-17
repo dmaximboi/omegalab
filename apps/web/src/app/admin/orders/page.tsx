@@ -84,37 +84,37 @@ const STEP_EXPLANATIONS: Record<string, { label: string; description: string; ic
   },
   "step:PROCESSING": {
     label: "Payment Started",
-    description: "Customer opened the Flutterwave checkout modal. The payment gateway is now handling card/bank details securely. Waiting for customer to complete payment.",
+    description: "Customer was redirected to Bachs hosted checkout. The payment gateway handles card/bank details. Waiting for the customer to complete payment.",
     icon: CreditCard,
     color: "text-amber-600 bg-amber-50 border-amber-200",
   },
   "step:VERIFYING": {
     label: "Verifying Payment",
-    description: "Server is making a secure server-to-server API call to Flutterwave to verify the transaction. Checking: (1) transaction status, (2) tx_ref matches DB record, (3) amount >= order total using Decimal comparison, (4) currency is NGN.",
+    description: "Server is making a secure server-to-server API call to Bachs to verify the checkout session. Checking: (1) session status, (2) reference matches DB txRef, (3) amount >= order total using Decimal comparison, (4) currency is NGN, (5) metadata.order_id matches.",
     icon: ShieldCheck,
     color: "text-purple-600 bg-purple-50 border-purple-200",
   },
   "step:PAID": {
     label: "Payment Confirmed",
-    description: "All 4 security checks passed. Payment verified successfully. Order status updated to PAID. Flutterwave transaction ID stored. Receipt can be generated from HMAC hash.",
+    description: "All security checks passed. Payment verified successfully. Order status updated to PAID. Bachs charge ID stored. Receipt can be generated from HMAC hash.",
     icon: CheckCircle2,
     color: "text-green-600 bg-green-50 border-green-200",
   },
-  "step:FAILED:flw_not_success": {
+  "step:FAILED:not_success": {
     label: "Payment Failed — Gateway Rejected",
-    description: "Flutterwave reported the transaction as NOT successful. This could be due to: insufficient funds, declined card, expired card, bank rejection, or customer cancellation.",
+    description: "Bachs reported the checkout as NOT successful. This could be due to: insufficient funds, declined card, expired card, bank rejection, or customer cancellation.",
     icon: XCircle,
     color: "text-red-600 bg-red-50 border-red-200",
   },
   "step:FAILED:txref_mismatch": {
     label: "Payment Failed — TX Ref Mismatch",
-    description: "SECURITY ALERT: The tx_ref returned by Flutterwave does NOT match the one stored in our database. This could indicate a replay attack or payment manipulation attempt. The IP has been logged.",
+    description: "SECURITY ALERT: The reference returned by Bachs does NOT match the one stored in our database. This could indicate a replay attack or payment manipulation attempt. The IP has been logged.",
     icon: AlertTriangle,
     color: "text-red-600 bg-red-50 border-red-200",
   },
   "step:FAILED:amount_mismatch": {
     label: "Payment Failed — Amount Mismatch",
-    description: "SECURITY ALERT: The amount paid is LESS than the order total. Someone may have intercepted the checkout and reduced the amount. Decimal.js comparison: flwAmount < dbAmount.",
+    description: "SECURITY ALERT: The amount paid is LESS than the order total. Someone may have intercepted the checkout and reduced the amount. Decimal.js comparison: paidAmount < dbAmount.",
     icon: AlertTriangle,
     color: "text-red-600 bg-red-50 border-red-200",
   },
@@ -132,7 +132,7 @@ const STEP_EXPLANATIONS: Record<string, { label: string; description: string; ic
   },
   "webhook:successful": {
     label: "Webhook Confirmed",
-    description: "Flutterwave webhook fired as a backup confirmation. Webhook signature verified with HMAC. Server-to-server re-verification passed. This is the secondary confirmation layer.",
+    description: "Bachs webhook fired as a backup confirmation. HMAC-SHA256 signature verified with a 5-minute timestamp window. Server-to-server re-verification passed. This is the secondary confirmation layer.",
     icon: Zap,
     color: "text-green-600 bg-green-50 border-green-200",
   },
@@ -239,7 +239,7 @@ export default function AdminOrdersPage() {
     });
 
     const csv = [
-      ["Order ID", "Status", "Amount", "Customer", "Email", "Date", "TX Ref", "FLW Ref"],
+      ["Order ID", "Status", "Amount", "Customer", "Email", "Date", "TX Ref", "Provider Ref"],
       ...filteredOrders.map(order => [
         order.id.slice(-8).toUpperCase(),
         order.status,
@@ -427,7 +427,7 @@ export default function AdminOrdersPage() {
                     {/* Order Info Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <InfoCard label="TX Reference" value={order.txRef} icon={CreditCard} />
-                      <InfoCard label="FLW Reference" value={order.flwRef || "—"} icon={Zap} />
+                      <InfoCard label="Provider Reference" value={order.flwRef || "—"} icon={Zap} />
                       <InfoCard label="Verified" value={order.paymentVerified ? "Yes ✓" : "No"} icon={ShieldCheck} />
                       <InfoCard label="IP Address" value={order.ipAddress || "—"} icon={Globe} />
                       <InfoCard label="User Agent" value={order.userAgent?.slice(0, 60) + "..." || "—"} icon={Monitor} />

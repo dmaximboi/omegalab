@@ -1,62 +1,52 @@
-// ============================================
-// Webhook Handler
-// ============================================
-
 import crypto from "crypto";
-import type { WebhookPayload } from "./types";
+import type { BachsWebhookEvent } from "./types";
 
-export function verifyWebhookSignature(payload: string, signature: string): boolean {
-  const secret = process.env.FLW_WEBHOOK_SECRET;
-  if (!secret) {
-    console.error("FLW_WEBHOOK_SECRET not configured");
+const SIGNATURE_TOLERANCE_SECONDS = 300;
+
+export function timingSafeEqualString(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) {
+    crypto.timingSafeEqual(bufA, bufA);
     return false;
   }
-
-  const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-  
-  try {
-    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
-  } catch {
-    return false;
-  }
+  return crypto.timingSafeEqual(bufA, bufB);
 }
 
-export function parseWebhookPayload(body: string): WebhookPayload | null {
-  try {
-    const parsed = JSON.parse(body);
-    
-    if (!parsed.event || !parsed.data) {
-      return null;
-    }
+export function verifyBachsWebhookSignature(
+  rawBody: string,
+  timestampHeader: string | null,
+  signatureHeader: string | null,
+  secret = process.env.BACHS_WEBHOOK_SECRET,
+  toleranceSeconds = SIGNATURE_TOLERANCE_SECONDS
+): boolean {
+  if (!secret || !timestampHeader || !signatureHeader || !rawBody) return false;
 
-    return parsed as WebhookPayload;
+  const timestamp = Number.parseInt(timestampHeader, 10);
+  if (!Number.isFinite(timestamp)) return false;
+  if (Math.abs(Date.now() / 1000 - timestamp) > toleranceSeconds) return false;
+
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(`${timestamp}.${rawBody}`, "utf8")
+    .digest("hex");
+
+  return timingSafeEqualString(expected, signatureHeader);
+}
+
+export function parseBachsWebhookEvent(body: string): BachsWebhookEvent | null {
+  try {
+    const parsed = JSON.parse(body) as BachsWebhookEvent;
+    if (!parsed?.id || !parsed?.type || typeof parsed.data !== "object") return null;
+    return parsed;
   } catch {
     return null;
   }
 }
 
-export function isChargeCompleted(payload: WebhookPayload): boolean {
-  return payload.event === "charge.completed" && payload.data.status === "successful";
-}
-
-export function extractTransactionDetails(payload: WebhookPayload): {
-  txRef: string;
-  flwRef: string;
-  amount: number;
-  currency: string;
-  email: string;
-} {
-  return {
-    txRef: payload.data.tx_ref,
-    flwRef: payload.data.flw_ref,
-    amount: payload.data.amount,
-    currency: payload.data.currency,
-    email: payload.data.customer.email,
-  };
-}
-
-export function validateWebhookTimestamp(timestamp: string, maxAgeSeconds: number = 300): boolean {
-  const webhookTime = new Date(timestamp).getTime();
-  const now = Date.now();
-  return Math.abs(now - webhookTime) <= maxAgeSeconds * 1000;
+export function isCollectionSucceeded(event: BachsWebhookEvent): boolean {
+  const typeOk = event.type === "collection.succeeded" || event.type === "checkout.completed";
+  const status = String(event.data?.status || "").toLowerCase();
+  const statusOk = !status || status === "succeeded" || status === "successful" || status === "completed";
+  return typeOk && statusOk;
 }

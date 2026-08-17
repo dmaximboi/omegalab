@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@omega/security": "*",
+    "decimal.js": "^10.6.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

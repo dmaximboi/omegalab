@@ -2,14 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Script from "next/script";
 import { Loader2, AlertCircle, CheckCircle } from "lucide-react";
-
-declare global {
-  interface Window {
-    FlutterwaveCheckout: (config: any) => void;
-  }
-}
 
 export const dynamic = "force-dynamic";
 
@@ -17,124 +10,78 @@ export default function PaymentProcessingPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.orderId as string;
-  
-  const [order, setOrder] = useState<any>(null);
+
+  const [order, setOrder] = useState<{ totalAmount?: number; status?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [flwLoaded, setFlwLoaded] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "processing" | "success" | "failed">("pending");
-  const [paymentToken, setPaymentToken] = useState<string>("");
-  const paymentCompleteRef = useRef(false);
+  const startingRef = useRef(false);
 
   useEffect(() => {
-    // Store order ID in localStorage for persistence
     if (orderId) {
       localStorage.setItem("pending_payment_order", orderId);
     }
-    
     fetchOrder();
   }, [orderId]);
 
   const fetchOrder = async () => {
     try {
-      // Payment token is now in httpOnly cookie, sent automatically
       const res = await fetch(`/api/orders/${orderId}`);
       if (res.ok) {
         const data = await res.json();
         setOrder(data);
-        
-        // If already paid, redirect to success
+
         if (data.status === "PAID") {
           setPaymentStatus("success");
-          setTimeout(() => {
-            router.push(`/order/success?id=${orderId}`);
-          }, 2000);
+          setTimeout(() => router.push(`/order/success?id=${orderId}`), 1500);
           return;
         }
-        
-        // If failed, show error
+
         if (data.status === "FAILED") {
           setPaymentStatus("failed");
           setError("Payment failed. Please try again.");
           return;
         }
-        
-        // Auto-initiate payment after short delay
-        setTimeout(() => initiatePayment(data), 1000);
+
+        await startCheckout();
       } else {
         setError("Order not found");
       }
-    } catch (err) {
+    } catch {
       setError("Failed to load order");
     } finally {
       setLoading(false);
     }
   };
 
-  const initiatePayment = (orderData: any) => {
-    if (!window.FlutterwaveCheckout) {
-      setError("Payment system loading...");
-      return;
-    }
-
+  const startCheckout = async () => {
+    if (startingRef.current) return;
+    startingRef.current = true;
     setPaymentStatus("processing");
+    setError("");
 
-    window.FlutterwaveCheckout({
-      public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
-      tx_ref: orderData.txRef,
-      amount: orderData.totalAmount,
-      currency: "NGN",
-      payment_options: "card,mobilemoney,ussd,banktransfer",
-      customer: {
-        email: orderData.userEmail || "customer@example.com",
-        phone_number: orderData.userPhone || "",
-        name: orderData.userName || "Customer",
-      },
-      customizations: {
-        title: "De-Omega Labaffairs",
-        description: `Order #${orderId.slice(-8).toUpperCase()}`,
-        logo: "https://i.ibb.co/LdGYh0t5/IMG-20260516-WA0025.jpg",
-      },
-      callback: async (response: any) => {
-        try {
-          // Payment token is in httpOnly cookie, sent automatically
-          const verifyRes = await fetch("/api/orders/verify", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              transaction_id: response.transaction_id,
-              orderId: orderId,
-            }),
-          });
+    try {
+      const res = await fetch(`/api/orders/${orderId}/checkout`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
 
-          if (verifyRes.ok) {
-            paymentCompleteRef.current = true;
-            setPaymentStatus("success");
-            localStorage.removeItem("pending_payment_order");
-            router.push(`/order/success?id=${orderId}`);
-          } else {
-            paymentCompleteRef.current = true;
-            setPaymentStatus("failed");
-            router.push(`/order/failed?id=${orderId}&tx=${response.transaction_id || ""}`);
-          }
-        } catch {
-          setPaymentStatus("failed");
-          setError("Could not verify payment. Please contact support.");
-        }
-      },
-      onclose: () => {
-        // Only redirect to order page if payment was NOT completed
-        // Use ref because React state is stale in this closure
-        if (!paymentCompleteRef.current) {
-          router.push("/order");
-        }
-      },
-    });
-  };
+      if (res.ok && data.alreadyPaid) {
+        setPaymentStatus("success");
+        router.push(`/order/success?id=${orderId}`);
+        return;
+      }
 
-  const retryPayment = () => {
-    if (order) {
-      initiatePayment(order);
+      if (!res.ok || !data.checkoutUrl) {
+        setPaymentStatus("failed");
+        setError(data.error || "Could not start payment.");
+        startingRef.current = false;
+        return;
+      }
+
+      window.location.assign(data.checkoutUrl);
+    } catch {
+      setPaymentStatus("failed");
+      setError("Could not start payment. Please try again.");
+      startingRef.current = false;
     }
   };
 
@@ -157,7 +104,10 @@ export default function PaymentProcessingPage() {
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Payment Failed</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
           <button
-            onClick={retryPayment}
+            onClick={() => {
+              startingRef.current = false;
+              startCheckout();
+            }}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
           >
             Retry Payment
@@ -190,24 +140,15 @@ export default function PaymentProcessingPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
       <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-8 max-w-md text-center">
         <Loader2 className="animate-spin text-blue-600 mx-auto mb-4" size={48} />
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Processing Payment</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Redirecting to secure checkout</h2>
         <p className="text-gray-600 dark:text-gray-400 mb-4">
           Order #<span className="font-mono">{orderId.slice(-8).toUpperCase()}</span>
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Total: ₦{order?.totalAmount?.toLocaleString() || "0"}
         </p>
-        {paymentStatus === "processing" && (
-          <p className="text-sm text-blue-600 mt-4">Payment window should open shortly...</p>
-        )}
-        {!flwLoaded && (
-          <p className="text-sm text-yellow-600 mt-4">Loading payment system...</p>
-        )}
+        <p className="text-sm text-blue-600 mt-4">You will be sent to Bachs to complete payment.</p>
       </div>
-      <Script
-        src="https://checkout.flutterwave.com/v3.js"
-        onLoad={() => setFlwLoaded(true)}
-      />
     </div>
   );
 }

@@ -2,18 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Navbar } from "@/components/Navbar";
 import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Loader2 } from "lucide-react";
 import { cart, CartItem } from "@/lib/cart";
-
-declare global {
-  interface Window {
-    FlutterwaveCheckout: (config: any) => void;
-  }
-}
 
 export default function OrderPage() {
   const { data: session } = useSession();
@@ -21,7 +14,6 @@ export default function OrderPage() {
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState(false);
   const [error, setError] = useState("");
-  const [flwLoaded, setFlwLoaded] = useState(false);
   const isSubmitting = useRef(false);
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -119,10 +111,6 @@ export default function OrderPage() {
 
   return (
     <>
-      <Script
-        src="https://checkout.flutterwave.com/v3.js"
-        onLoad={() => setFlwLoaded(true)}
-      />
       <Navbar />
       <main className="min-h-screen bg-light-grey dark:bg-gray-900">
         <div className="container py-8">

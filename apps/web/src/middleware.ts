@@ -44,12 +44,12 @@ export async function middleware(request: NextRequest) {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://checkout.flutterwave.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https: http:",
-      "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://*.uploadthing.com https://*.neon.tech https://api.ravepay.co https://*.flutterwave.com https://*.myflutterwave.com https://checkout.flutterwave.com https://checkout-v3-ui-prod.f4b-flutterwave.com https://api-js.mixpanel.com",
-      "frame-src 'self' https://accounts.google.com https://checkout.flutterwave.com https://checkout-v3.flutterwave.com https://checkout-v3-ui-prod.f4b-flutterwave.com",
+      "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://*.uploadthing.com https://*.neon.tech https://api-js.mixpanel.com",
+      "frame-src 'self' https://accounts.google.com",
       "frame-ancestors 'none'",
       "form-action 'self'",
       "base-uri 'self'",
@@ -72,7 +72,9 @@ export async function middleware(request: NextRequest) {
   // ============================================
   // RATE LIMITING — temporary 429 only (never site-wide permanent ban)
   // ============================================
-  if (pathname.startsWith("/api/")) {
+  const isWebhook = pathname.startsWith("/api/webhooks/");
+
+  if (pathname.startsWith("/api/") && !isWebhook) {
     const maxRequests = pathname.includes("/auth/") ? 5 : 60;
     const windowMs = 60000;
     const blockDuration = 2 * 60 * 1000; // 2 minutes soft block on that key only

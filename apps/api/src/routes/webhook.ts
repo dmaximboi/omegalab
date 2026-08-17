@@ -3,42 +3,41 @@ import crypto from "crypto";
 
 const router = Router();
 
-// POST /api/webhook/flutterwave - Flutterwave payment webhook
-router.post("/flutterwave", async (req: Request, res: Response) => {
-  try {
-    const signature = req.headers["verif-hash"] as string;
-    const secret = process.env.FLW_WEBHOOK_SECRET;
+function verifyBachsSignature(rawBody: string, timestampHeader: string, signatureHeader: string, secret: string): boolean {
+  const timestamp = Number.parseInt(timestampHeader, 10);
+  if (!Number.isFinite(timestamp)) return false;
+  if (Math.abs(Date.now() / 1000 - timestamp) > 300) return false;
 
+  const expected = crypto.createHmac("sha256", secret).update(`${timestamp}.${rawBody}`, "utf8").digest("hex");
+  try {
+    const a = Buffer.from(expected);
+    const b = Buffer.from(signatureHeader);
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
+router.post("/bachs", async (req: Request, res: Response) => {
+  try {
+    const secret = process.env.BACHS_WEBHOOK_SECRET;
     if (!secret) {
-      console.error("[WEBHOOK] FLW_WEBHOOK_SECRET not configured");
+      console.error("[WEBHOOK] BACHS_WEBHOOK_SECRET not configured");
       return res.status(500).json({ error: "Server configuration error" });
     }
 
-    // Verify signature using timing-safe comparison
-    const payload = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
-    const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+    const rawBody = Buffer.isBuffer(req.body) ? req.body.toString("utf8") : typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+    const timestamp = String(req.headers["x-bachs-timestamp"] || "");
+    const signature = String(req.headers["x-bachs-signature"] || "");
 
-    try {
-      if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature || ""))) {
-        console.error("[WEBHOOK] Invalid signature");
-        return res.status(401).json({ error: "Invalid signature" });
-      }
-    } catch {
-      console.error("[WEBHOOK] Signature verification failed");
+    if (!verifyBachsSignature(rawBody, timestamp, signature, secret)) {
+      console.error("[WEBHOOK] Invalid signature");
       return res.status(401).json({ error: "Invalid signature" });
     }
 
-    const data = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-
-    if (data.event === "charge.completed" && data.data?.status === "successful") {
-      const txRef = data.data.tx_ref;
-      const amount = data.data.amount;
-
-      // TODO: Verify with Flutterwave API (don't trust webhook alone)
-      // TODO: Update order status in database
-      console.log("[WEBHOOK] Payment successful:", txRef, amount);
-    }
-
+    const data = JSON.parse(rawBody);
+    console.log("[WEBHOOK] Bachs event:", data.type, data.id);
     res.json({ status: "ok" });
   } catch (error) {
     console.error("[WEBHOOK] Error:", error);

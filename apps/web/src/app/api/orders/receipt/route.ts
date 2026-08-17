@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { cookies } from "next/headers";
+import { timingSafeEqualString } from "@/lib/payment";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +26,9 @@ function getPrisma() {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const paymentToken = cookies().get("payment_token")?.value;
+
+    if (!session?.user?.id && !paymentToken) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -34,12 +38,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
     }
 
-    // Only return receipt for verified (paid) orders owned by the user (or admin)
     const order = await getPrisma().order.findFirst({
       where: {
         id,
         paymentVerified: true,
-        ...(session.user.isAdmin ? {} : { userId: session.user.id }),
       },
       include: {
         items: {
@@ -55,6 +57,17 @@ export async function GET(request: NextRequest) {
 
     if (!order) {
       return NextResponse.json({ error: "Order not found or not paid" }, { status: 404 });
+    }
+
+    const tokenOk =
+      Boolean(paymentToken) &&
+      Boolean(order.paymentToken) &&
+      timingSafeEqualString(paymentToken!, order.paymentToken!);
+    const ownerOk = Boolean(session?.user?.id && session.user.id === order.userId);
+    const adminOk = session?.user?.isAdmin === true;
+
+    if (!tokenOk && !ownerOk && !adminOk) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     return NextResponse.json({

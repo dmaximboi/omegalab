@@ -85,7 +85,8 @@ model Order {
   items           OrderItem[]
   totalAmount     Decimal
   status          OrderStatus @default(INITIATED)
-  flwRef          String?
+  flwRef          String?     // Provider charge/payment id (Bachs charge id; legacy column name)
+  checkoutId      String?     @unique
   txRef           String      @unique
   receiptHash     String      @unique
   receiptSalt     String?
@@ -210,4 +211,14 @@ model PaymentLog {
 
   @@index([orderId])
   @@index([txRef])
+}
+
+model WebhookEvent {
+  id          String   @id // Provider event id (evt_...)
+  type        String
+  orderId     String?
+  processedAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([processedAt])
 }

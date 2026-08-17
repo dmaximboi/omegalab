@@ -1,88 +1,67 @@
-// ============================================
-// Payment Verification
-// ============================================
+import Decimal from "decimal.js";
+import type { BachsCheckoutSession, PaymentVerification } from "./types";
 
-import type { PaymentVerification } from "./types";
+const EXPECTED_CURRENCY = (process.env.PAYMENT_CURRENCY || "NGN").toUpperCase();
 
-const FLW_BASE_URL = "https://api.flutterwave.com/v3";
-
-function getSecretKey(): string {
-  const key = process.env.FLW_SECRET_KEY;
-  if (!key) throw new Error("FLW_SECRET_KEY not configured");
-  return key;
+export interface CheckoutSecurityChecks {
+  sessionOpen: boolean;
+  isSuccess: boolean;
+  txRefMatch: boolean;
+  amountOk: boolean;
+  currencyOk: boolean;
+  orderIdMatch: boolean;
+  paidAmount: Decimal;
 }
 
-export async function verifyPaymentByTxRef(txRef: string): Promise<PaymentVerification | null> {
-  try {
-    const response = await fetch(
-      `${FLW_BASE_URL}/transactions/verify_by_reference?tx_ref=${encodeURIComponent(txRef)}`,
-      {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${getSecretKey()}`,
-        },
-      }
-    );
-
-    const result = await response.json();
-
-    if (result.status !== "success" || !result.data) {
-      return null;
-    }
-
-    const data = result.data;
-    return {
-      txRef: data.tx_ref,
-      flwRef: data.flw_ref,
-      amount: data.amount,
-      currency: data.currency,
-      status: data.status === "successful" ? "successful" : data.status === "failed" ? "failed" : "pending",
-      chargedAmount: data.charged_amount,
-      customerEmail: data.customer?.email || "",
-      paymentType: data.payment_type,
-      createdAt: data.created_at,
-    };
-  } catch {
-    return null;
-  }
+export function normalizeStatus(value: string | null | undefined): string {
+  return String(value || "").trim().toLowerCase();
 }
 
-export async function verifyPaymentById(transactionId: number): Promise<PaymentVerification | null> {
-  try {
-    const response = await fetch(
-      `${FLW_BASE_URL}/transactions/${transactionId}/verify`,
-      {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${getSecretKey()}`,
-        },
-      }
-    );
+export function evaluateCheckout(
+  session: BachsCheckoutSession,
+  expected: { txRef: string; amount: string | number; orderId: string }
+): CheckoutSecurityChecks {
+  const status = normalizeStatus(session.status);
+  const paymentStatus = normalizeStatus(session.payment_status || session.charge?.status);
+  const isSuccess =
+    (status === "completed" || status === "complete") &&
+    (paymentStatus === "succeeded" || paymentStatus === "successful" || paymentStatus === "completed" || paymentStatus === "");
 
-    const result = await response.json();
+  const paidAmount = new Decimal(session.amount ?? session.charge?.amount ?? "0");
+  const dbAmount = new Decimal(expected.amount.toString());
 
-    if (result.status !== "success" || !result.data) {
-      return null;
-    }
+  const metaOrderId = session.metadata?.order_id;
 
-    const data = result.data;
-    return {
-      txRef: data.tx_ref,
-      flwRef: data.flw_ref,
-      amount: data.amount,
-      currency: data.currency,
-      status: data.status === "successful" ? "successful" : data.status === "failed" ? "failed" : "pending",
-      chargedAmount: data.charged_amount,
-      customerEmail: data.customer?.email || "",
-      paymentType: data.payment_type,
-      createdAt: data.created_at,
-    };
-  } catch {
-    return null;
-  }
+  return {
+    sessionOpen: status === "open",
+    isSuccess,
+    txRefMatch: session.reference === expected.txRef,
+    amountOk: paidAmount.gte(dbAmount),
+    currencyOk: normalizeStatus(session.currency || session.charge?.currency) === EXPECTED_CURRENCY.toLowerCase(),
+    orderIdMatch: !metaOrderId || metaOrderId === expected.orderId,
+    paidAmount,
+  };
 }
 
-export function validatePaymentAmount(expected: number, actual: number, tolerance: number = 0.01): boolean {
+export function checkoutToVerification(session: BachsCheckoutSession): PaymentVerification {
+  const checksPass =
+    normalizeStatus(session.status) === "completed" &&
+    ["succeeded", "successful", "completed", ""].includes(normalizeStatus(session.payment_status || session.charge?.status));
+
+  return {
+    checkoutId: session.checkout_id,
+    chargeId: session.charge?.payment_id,
+    txRef: session.reference || "",
+    amount: String(session.amount ?? "0"),
+    currency: String(session.currency || "").toUpperCase(),
+    status: checksPass ? "successful" : normalizeStatus(session.status) === "open" ? "pending" : "failed",
+    paymentStatus: session.payment_status || session.status,
+    customerEmail: session.customer?.email || "",
+    metadata: session.metadata || undefined,
+  };
+}
+
+export function validatePaymentAmount(expected: number, actual: number, tolerance = 0.01): boolean {
   const diff = Math.abs(expected - actual);
   return diff <= tolerance * expected;
 }

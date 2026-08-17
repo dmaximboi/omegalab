@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
 import { cookies } from "next/headers";
+import { timingSafeEqualString } from "@/lib/payment";
 
 export const dynamic = "force-dynamic";
 
@@ -56,10 +57,11 @@ export async function GET(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Allow access if valid paymentToken is provided (for checkout flow)
-    const hasValidPaymentToken = paymentToken && 
-      order.paymentToken === paymentToken && 
-      order.tokenExpiresAt && 
+    const hasValidPaymentToken =
+      Boolean(paymentToken) &&
+      Boolean(order.paymentToken) &&
+      timingSafeEqualString(paymentToken!, order.paymentToken!) &&
+      order.tokenExpiresAt &&
       new Date() < new Date(order.tokenExpiresAt);
 
     // Otherwise require session-based ownership or admin

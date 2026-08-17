@@ -24,10 +24,28 @@ export function isValidAmount(amount: number, minAmount: number = 100, maxAmount
   return decimals <= 2;
 }
 
-// 4. Verify Flutterwave Webhook Signature
+// 4. Verify Bachs Webhook Signature (timestamp + HMAC-SHA256)
+export function verifyBachsSignature(
+  rawBody: string,
+  timestampHeader: string,
+  signatureHeader: string,
+  secret: string,
+  toleranceSeconds = 300
+): boolean {
+  const timestamp = Number.parseInt(timestampHeader, 10);
+  if (!Number.isFinite(timestamp) || !rawBody || !signatureHeader || !secret) return false;
+  if (Math.abs(Date.now() / 1000 - timestamp) > toleranceSeconds) return false;
+  const expected = crypto.createHmac("sha256", secret).update(`${timestamp}.${rawBody}`, "utf8").digest("hex");
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signatureHeader));
+  } catch {
+    return false;
+  }
+}
+
+/** @deprecated Use verifyBachsSignature */
 export function verifyFlutterwaveSignature(payload: string, signature: string, secret: string): boolean {
-  const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  return verifyBachsSignature(payload, "0", signature, secret, Number.MAX_SAFE_INTEGER);
 }
 
 // 5. Generate Idempotency Key

@@ -102,6 +102,7 @@ export async function GET(
         totalAmount: parseFloat(order.totalAmount.toString()),
         paymentVerified: order.paymentVerified,
         flwRef: order.flwRef,
+        checkoutId: order.checkoutId || null,
         ipAddress: order.ipAddress,
         userAgent: order.userAgent,
         createdAt: order.createdAt,
@@ -147,15 +148,17 @@ function getStepExplanation(step: string): string {
     "step:INITIATED":
       "Order was created in the database. Server validated all product IDs exist and are active, fetched prices from DB (never trusting frontend), computed total using Decimal.js for precision, generated cryptographic txRef and HMAC receipt hash with salt, logged IP address and user agent.",
     "step:PROCESSING":
-      "The customer opened the Flutterwave Inline checkout modal. Payment is being processed by Flutterwave's secure gateway. Waiting for customer to complete payment.",
+      "The customer was redirected to Bachs hosted checkout. Card and bank details are collected by Bachs, not this site. Waiting for the customer to complete payment.",
     "step:VERIFYING":
-      "Server initiated a server-to-server verification call to Flutterwave API (GET /v3/transactions/:id/verify). Critical security step: verifies independently of frontend report.",
+      "Server initiated a server-to-server verification call to Bachs (GET /v1/checkout-sessions/:id). Critical security step: verifies independently of the browser redirect.",
     "step:PAID":
-      "ALL security checks passed: (1) Flutterwave confirms status=successful, (2) tx_ref from Flutterwave matches DB record, (3) paid amount >= order total (Decimal comparison), (4) currency is NGN. Order marked PAID.",
-    "step:FAILED:flw_not_success":
-      "Flutterwave reported the transaction as failed. Causes: insufficient funds, card declined, bank timeout, 3DS failure, or customer abandonment.",
+      "ALL security checks passed: (1) Bachs session status is completed, (2) checkout reference matches our txRef, (3) paid amount >= order total (Decimal comparison), (4) currency is NGN, (5) metadata.order_id matches. Order marked PAID.",
+    "step:FAILED:not_success":
+      "Bachs reported the checkout as not successful. Causes: insufficient funds, card declined, bank timeout, or customer abandonment.",
     "step:FAILED:txref_mismatch":
-      "SECURITY ALERT: The tx_ref from Flutterwave does NOT match our DB record. Possible replay attack or payment manipulation. IP has been logged.",
+      "SECURITY ALERT: The reference from Bachs does NOT match our DB record. Possible replay attack or payment manipulation. IP has been logged.",
+    "step:VERIFY_REJECTED:checkout_mismatch":
+      "SECURITY ALERT: The checkout_id from the client does not match the session stored on this order.",
     "step:FAILED:amount_mismatch":
       "SECURITY ALERT: Amount paid is LESS than order total. Possible checkout tampering. Decimal.js comparison caught the discrepancy.",
     "step:FAILED:currency_mismatch":
@@ -163,7 +166,9 @@ function getStepExplanation(step: string): string {
     "step:FAILED:expired":
       "Order exceeded 24-hour payment window and was automatically expired.",
     "webhook:successful":
-      "Flutterwave webhook received as backup confirmation. HMAC-SHA256 signature verified against raw body. Server-to-server re-verification passed.",
+      "Bachs webhook received as backup confirmation. HMAC-SHA256 signature verified with timestamp replay window. Server-to-server re-verification passed.",
+    "webhook:collection.succeeded":
+      "Bachs collection.succeeded webhook received. Signature verified; checkout session re-fetched from Bachs before fulfillment.",
   };
 
   for (const [key, explanation] of Object.entries(explanations)) {

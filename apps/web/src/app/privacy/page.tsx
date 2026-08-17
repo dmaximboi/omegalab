@@ -19,7 +19,7 @@ export default function PrivacyPage() {
             <ul>
               <li>Name and contact information (email, phone number, address)</li>
               <li>Account credentials</li>
-              <li>Payment information (processed securely through Flutterwave)</li>
+              <li>Payment information (processed securely through Bachs)</li>
               <li>Order history and preferences</li>
             </ul>
 

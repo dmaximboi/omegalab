@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient, OrderStatus, Role } from "@prisma/client";
 import Decimal from "decimal.js";
-import { generateTxRef, generateReceiptHash } from "@/lib/flutterwave";
+import { generateTxRef, generateReceiptHash } from "@/lib/payment";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import crypto from "crypto";
