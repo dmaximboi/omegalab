@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { createCheckoutSession, getCheckoutSession, getBachsMaxCheckoutUsd, isCheckoutAmountWithinLimit, mapCheckoutProviderError } from "@/lib/bachs";
 import { getAppUrl, normalizeNgPhone, timingSafeEqualString } from "@/lib/payment";
 import { logPayment } from "@/lib/fulfill-order";
+import { serializeLogPayload } from "@/lib/payment-log";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
   quoteNgnToUsd,
@@ -203,7 +204,7 @@ export async function POST(
         orderId: order.id,
         txRef: order.txRef,
         status: "step:FAILED:checkout_create",
-        responseData: result.message,
+        responseData: serializeLogPayload({ message: result.message }),
         ipAddress,
       });
       return NextResponse.json(

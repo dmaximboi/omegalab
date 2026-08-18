@@ -52,7 +52,7 @@ export async function POST(
     const body = await request.json();
     const urls: unknown = body?.urls;
     if (!Array.isArray(urls) || urls.length === 0 || urls.length > MAX_IMAGES_PER_PRODUCT) {
-      return NextResponse.json({ error: "Provide 1–5 image URLs" }, { status: 400 });
+      return NextResponse.json({ error: "Provide 1 to 5 image URLs" }, { status: 400 });
     }
 
     for (const url of urls) {
@@ -128,7 +128,6 @@ export async function DELETE(
         console.log("[ADMIN] Deleted file from UploadThing:", fileKey);
       } catch (utError) {
         console.error("[ADMIN] UploadThing delete failed:", utError);
-        // Still remove DB row so UI stays consistent; log for manual cleanup
       }
     }
 

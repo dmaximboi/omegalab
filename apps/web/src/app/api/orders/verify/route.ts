@@ -111,7 +111,7 @@ export async function POST(request: Request) {
     }
 
     const response = NextResponse.json(
-      { error: "Payment could not be verified", txRef: order.txRef },
+      { error: "Payment could not be verified" },
       { status: 400 }
     );
     if (definitiveFailure) {

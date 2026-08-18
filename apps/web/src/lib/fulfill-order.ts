@@ -3,6 +3,7 @@ import { getCheckoutSession, isValidCheckoutId, type BachsCheckoutSession } from
 import { timingSafeEqualString } from "@/lib/payment";
 import { evaluateCheckout } from "@/lib/checkout-checks";
 import { validateLockedQuoteIntegrity } from "@/lib/fx";
+import { serializeLogPayload } from "@/lib/payment-log";
 
 export { evaluateCheckout } from "@/lib/checkout-checks";
 
@@ -240,8 +241,8 @@ export async function logPayment(
         amount: data.amount ?? null,
         status: data.status,
         responseCode: data.responseCode || null,
-        responseData: data.responseData || null,
-        webhookData: data.webhookData || null,
+        responseData: serializeLogPayload(data.responseData),
+        webhookData: serializeLogPayload(data.webhookData),
         ipAddress: data.ipAddress || null,
       },
     });

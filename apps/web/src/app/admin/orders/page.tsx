@@ -24,6 +24,7 @@ import {
   MessageSquare,
   Send,
 } from "lucide-react";
+import { getPaymentStepLabel, getPaymentStepDescription } from "@/lib/payment-step-labels";
 
 export const dynamic = "force-dynamic";
 
@@ -79,102 +80,38 @@ interface Pagination {
   pages: number;
 }
 
-// Human-readable step explanations
-const STEP_EXPLANATIONS: Record<string, { label: string; description: string; icon: any; color: string }> = {
-  "step:INITIATED": {
-    label: "Order Created",
-    description: "Order was placed by the customer. Cart items validated, prices verified from database, total computed server-side with Decimal.js precision. HMAC receipt hash generated with cryptographic salt.",
-    icon: Package,
-    color: "text-blue-600 bg-blue-50 border-blue-200",
-  },
-  "step:PROCESSING": {
-    label: "Payment Started",
-    description: "Customer was redirected to Bachs hosted checkout. The payment gateway handles card/bank details. Waiting for the customer to complete payment.",
-    icon: CreditCard,
-    color: "text-amber-600 bg-amber-50 border-amber-200",
-  },
-  "step:VERIFYING": {
-    label: "Verifying Payment",
-    description: "Server is making a secure server-to-server API call to Bachs to verify the checkout session. Checking: (1) session status, (2) reference matches DB txRef, (3) paid USD amount >= locked paymentAmount, (4) currency is USD, (5) metadata.order_id matches.",
-    icon: ShieldCheck,
-    color: "text-purple-600 bg-purple-50 border-purple-200",
-  },
-  "step:PAID": {
-    label: "Payment Confirmed",
-    description: "All security checks passed. Payment verified successfully. Order status updated to PAID. Bachs charge ID stored. Receipt can be generated from HMAC hash.",
-    icon: CheckCircle2,
-    color: "text-green-600 bg-green-50 border-green-200",
-  },
-  "step:FAILED:not_success": {
-    label: "Payment Failed — Gateway Rejected",
-    description: "Bachs reported the checkout as NOT successful. This could be due to: insufficient funds, declined card, expired card, bank rejection, or customer cancellation.",
-    icon: XCircle,
-    color: "text-red-600 bg-red-50 border-red-200",
-  },
-  "step:FAILED:txref_mismatch": {
-    label: "Payment Failed — TX Ref Mismatch",
-    description: "SECURITY ALERT: The reference returned by Bachs does NOT match the one stored in our database. This could indicate a replay attack or payment manipulation attempt. The IP has been logged.",
-    icon: AlertTriangle,
-    color: "text-red-600 bg-red-50 border-red-200",
-  },
-  "step:FAILED:amount_mismatch": {
-    label: "Payment Failed — Amount Mismatch",
-    description: "SECURITY ALERT: The amount paid is LESS than the order total. Someone may have intercepted the checkout and reduced the amount. Decimal.js comparison: paidAmount < dbAmount.",
-    icon: AlertTriangle,
-    color: "text-red-600 bg-red-50 border-red-200",
-  },
-  "step:FAILED:currency_mismatch": {
-    label: "Payment Failed — Currency Mismatch",
-    description: "SECURITY ALERT: Payment was made in a different currency than PAYMENT_CURRENCY. This is a currency substitution attack — paying in a weaker currency to get goods cheaper.",
-    icon: AlertTriangle,
-    color: "text-red-600 bg-red-50 border-red-200",
-  },
-  "step:FAILED:expired": {
-    label: "Order Expired",
-    description: "The order was not paid within 24 hours and has expired. Pending orders auto-expire to prevent indefinite holds on inventory.",
-    icon: Clock,
-    color: "text-gray-600 bg-gray-50 border-gray-200",
-  },
-  "webhook:successful": {
-    label: "Webhook Confirmed",
-    description: "Bachs webhook fired as a backup confirmation. HMAC-SHA256 signature verified with a 5-minute timestamp window. Server-to-server re-verification passed. This is the secondary confirmation layer.",
-    icon: Zap,
-    color: "text-green-600 bg-green-50 border-green-200",
-  },
-};
+function getStepVisuals(step: string): { icon: typeof Clock; color: string } {
+  if (step.startsWith("step:INITIATED")) {
+    return { icon: Package, color: "text-blue-600 bg-blue-50 border-blue-200" };
+  }
+  if (step.startsWith("step:PROCESSING")) {
+    return { icon: CreditCard, color: "text-amber-600 bg-amber-50 border-amber-200" };
+  }
+  if (step.startsWith("step:VERIFYING")) {
+    return { icon: ShieldCheck, color: "text-purple-600 bg-purple-50 border-purple-200" };
+  }
+  if (step.startsWith("step:PAID") || step.startsWith("webhook:")) {
+    return { icon: step.startsWith("webhook:") ? Zap : CheckCircle2, color: "text-green-600 bg-green-50 border-green-200" };
+  }
+  if (step.includes("mismatch")) {
+    return { icon: AlertTriangle, color: "text-red-600 bg-red-50 border-red-200" };
+  }
+  if (step.includes("FAILED") || step.includes("not_success")) {
+    return { icon: XCircle, color: "text-red-600 bg-red-50 border-red-200" };
+  }
+  if (step.includes("expired")) {
+    return { icon: Clock, color: "text-gray-600 bg-gray-50 border-gray-200" };
+  }
+  return { icon: Clock, color: "text-gray-600 bg-gray-50 border-gray-200" };
+}
 
 function getStepInfo(step: string) {
-  // Try exact match first
-  if (STEP_EXPLANATIONS[step]) return STEP_EXPLANATIONS[step];
-
-  // Try prefix match for dynamic failure reasons
-  for (const key of Object.keys(STEP_EXPLANATIONS)) {
-    if (step.startsWith(key)) return STEP_EXPLANATIONS[key];
-  }
-
-  // Fallback for unknown steps
-  if (step.includes("FAILED")) {
-    return {
-      label: "Transaction Failed",
-      description: `Failure recorded: ${step}. Check raw details below for debugging information.`,
-      icon: XCircle,
-      color: "text-red-600 bg-red-50 border-red-200",
-    };
-  }
-  if (step.includes("webhook")) {
-    return {
-      label: "Webhook Event",
-      description: `Webhook event processed: ${step}`,
-      icon: Zap,
-      color: "text-blue-600 bg-blue-50 border-blue-200",
-    };
-  }
-
+  const visuals = getStepVisuals(step);
   return {
-    label: step,
-    description: "Transaction step recorded.",
-    icon: Clock,
-    color: "text-gray-600 bg-gray-50 border-gray-200",
+    label: getPaymentStepLabel(step),
+    description: getPaymentStepDescription(step),
+    icon: visuals.icon,
+    color: visuals.color,
   };
 }
 
@@ -318,12 +255,11 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Transaction Monitor</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Full lifecycle logging of every order — 5-step state machine
+            Full lifecycle logging of every order, 5 step state machine
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -345,7 +281,6 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      {/* Search and Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={16} />
@@ -377,7 +312,6 @@ export default function AdminOrdersPage() {
         <div className="p-4 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
       )}
 
-      {/* Orders List */}
       {orders.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700">
           <Package className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
@@ -399,7 +333,6 @@ export default function AdminOrdersPage() {
             const isExpanded = expandedOrder === order.id;
             return (
               <div key={order.id} className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-hidden">
-                {/* Order Header */}
                 <button
                   onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
                   className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition text-left"
@@ -426,13 +359,11 @@ export default function AdminOrdersPage() {
                   </div>
                 </button>
 
-                {/* Expanded Detail */}
                 {isExpanded && (
                   <div className="border-t dark:border-gray-700 px-6 py-5 space-y-6">
-                    {/* Order Info Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <InfoCard label="TX Reference" value={order.txRef} icon={CreditCard} />
-                      <InfoCard label="Provider Reference" value={order.providerRef || "—"} icon={Zap} />
+                      <InfoCard label="Provider Reference" value={order.providerRef || "N/A"} icon={Zap} />
                       <InfoCard label="Verified" value={order.paymentVerified ? "Yes ✓" : "No"} icon={ShieldCheck} />
                       <InfoCard
                         label="Order Total (NGN)"
@@ -447,7 +378,7 @@ export default function AdminOrdersPage() {
                                 style: "currency",
                                 currency: order.paymentCurrency || "USD",
                               }).format(order.paymentAmount)
-                            : "—"
+                            : "N/A"
                         }
                         icon={CreditCard}
                       />
@@ -456,16 +387,15 @@ export default function AdminOrdersPage() {
                         value={
                           order.fxRate != null
                             ? `₦${order.fxRate.toLocaleString()}/USD (${order.fxSource || "n/a"})`
-                            : "—"
+                            : "N/A"
                         }
                         icon={Globe}
                       />
-                      <InfoCard label="IP Address" value={order.ipAddress || "—"} icon={Globe} />
-                      <InfoCard label="User Agent" value={order.userAgent?.slice(0, 60) + "..." || "—"} icon={Monitor} />
-                      <InfoCard label="Customer" value={`${order.customer.name || "—"} (${order.customer.email})`} icon={User} />
+                      <InfoCard label="IP Address" value={order.ipAddress || "N/A"} icon={Globe} />
+                      <InfoCard label="User Agent" value={order.userAgent?.slice(0, 60) + "..." || "N/A"} icon={Monitor} />
+                      <InfoCard label="Customer" value={`${order.customer.name || "N/A"} (${order.customer.email})`} icon={User} />
                     </div>
 
-                    {/* Order Items */}
                     <div>
                       <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Order Items</h4>
                       <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 space-y-1">
@@ -486,7 +416,6 @@ export default function AdminOrdersPage() {
                       </div>
                     </div>
 
-                    {/* Send Message to Customer */}
                     <div>
                       <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Customer Communication</h4>
                       <button
@@ -498,7 +427,6 @@ export default function AdminOrdersPage() {
                       </button>
                     </div>
 
-                    {/* Transaction Timeline — 5 Steps */}
                     <div>
                       <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                         Transaction Lifecycle ({order.transactionSteps.length} events logged)
@@ -508,7 +436,6 @@ export default function AdminOrdersPage() {
                         <p className="text-sm text-gray-500 dark:text-gray-400 italic">No transaction logs recorded yet.</p>
                       ) : (
                         <div className="relative">
-                          {/* Timeline line */}
                           <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
 
                           <div className="space-y-4">
@@ -519,7 +446,6 @@ export default function AdminOrdersPage() {
 
                               return (
                                 <div key={idx} className="relative pl-12">
-                                  {/* Timeline dot */}
                                   <div className={`absolute left-3 w-5 h-5 rounded-full border-2 flex items-center justify-center ${info.color}`}>
                                     <Icon size={10} />
                                   </div>
@@ -538,7 +464,6 @@ export default function AdminOrdersPage() {
                                       {info.description}
                                     </p>
 
-                                    {/* Raw metadata */}
                                     {(step.ip || step.amount || step.details) && (
                                         <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
                                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
@@ -577,7 +502,6 @@ export default function AdminOrdersPage() {
                       )}
                     </div>
 
-                    {/* Timestamps */}
                     <div className="grid grid-cols-3 gap-4 pt-4 border-t text-xs text-gray-500 dark:text-gray-400">
                       <div>
                         <span className="block font-medium text-gray-600 dark:text-gray-300">Created</span>
@@ -589,7 +513,7 @@ export default function AdminOrdersPage() {
                       </div>
                       <div>
                         <span className="block font-medium text-gray-600 dark:text-gray-300">Verified At</span>
-                        {order.verifiedAt ? formatDate(order.verifiedAt) : "—"}
+                        {order.verifiedAt ? formatDate(order.verifiedAt) : "N/A"}
                       </div>
                     </div>
                   </div>
@@ -600,7 +524,6 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
-      {/* Pagination */}
       {pagination && pagination.pages > 1 && (
         <div className="flex items-center justify-center gap-2">
           {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((p) => (
@@ -619,7 +542,6 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
-      {/* Message Modal */}
       {messageOrderId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">

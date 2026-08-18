@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
+import { parseLogResponseData } from "@/lib/payment-log";
 
 export const dynamic = "force-dynamic";
 
-// Lazy Prisma client - only instantiated when first accessed
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
 function getPrisma() {
@@ -20,15 +20,6 @@ function getPrisma() {
     });
   }
   return globalForPrisma.prisma;
-}
-
-function parseLogResponseData(value: string | null | undefined): unknown {
-  if (!value) return null;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return { message: value };
-  }
 }
 
 export async function GET(request: Request) {
@@ -64,14 +55,12 @@ export async function GET(request: Request) {
       getPrisma().order.count({ where }),
     ]);
 
-    // Get transaction logs for each order
     const orderIds = orders.map((o: typeof orders[number]) => o.id);
     const logs = await getPrisma().paymentLog.findMany({
       where: { orderId: { in: orderIds } },
       orderBy: { createdAt: "asc" },
     });
 
-    // Group logs by orderId
     const logsByOrder = new Map<string, typeof logs>();
     for (const log of logs) {
       if (!log.orderId) continue;

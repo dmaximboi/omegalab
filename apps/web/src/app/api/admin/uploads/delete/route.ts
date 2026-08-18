@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const urls: unknown = body?.urls ?? (body?.url ? [body.url] : []);
     if (!Array.isArray(urls) || urls.length === 0 || urls.length > 20) {
-      return NextResponse.json({ error: "Provide 1–20 image URLs" }, { status: 400 });
+      return NextResponse.json({ error: "Provide 1 to 20 image URLs" }, { status: 400 });
     }
 
     const keys: string[] = [];
