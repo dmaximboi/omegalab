@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import {
-  ArrowLeft, Mail, MailOpen, Trash2,
+  Mail, MailOpen, Trash2,
   Loader2, MessageSquare, Clock, User
 } from "lucide-react";
 
@@ -74,28 +73,15 @@ export default function AdminMessagesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Link 
-              href="/admin" 
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-            >
-              <ArrowLeft size={20} />
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Messages</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {messages.filter(m => !m.isRead).length} unread messages
-              </p>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Messages</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {messages.filter(m => !m.isRead).length} unread messages
+        </p>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <div>
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="animate-spin text-blue-600" size={32} />
@@ -214,7 +200,7 @@ export default function AdminMessagesPage() {
             </div>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

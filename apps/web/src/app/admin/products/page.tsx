@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  ArrowLeft,
   Plus,
   Search,
   Edit,
@@ -92,36 +91,22 @@ export default function AdminProductsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link
-                href="/admin"
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-              >
-                <ArrowLeft size={20} />
-              </Link>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Products</h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Manage your product catalog
-                </p>
-              </div>
-            </div>
-            <Link
-              href="/admin/products/new"
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-            >
-              <Plus size={18} />
-              Add Product
-            </Link>
-          </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Products</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Manage your product catalog</p>
         </div>
-      </header>
+        <Link
+          href="/admin/products/new"
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+        >
+          <Plus size={18} />
+          Add Product
+        </Link>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <div>
         <div className="mb-6">
           <div className="relative max-w-md">
             <Search
@@ -233,7 +218,7 @@ export default function AdminProductsPage() {
             ))}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

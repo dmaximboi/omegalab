@@ -28,12 +28,12 @@ import {
 export const dynamic = "force-dynamic";
 
 const STATUS_BADGES: Record<string, string> = {
-  INITIATED: "bg-blue-100 text-blue-700",
-  PROCESSING: "bg-amber-100 text-amber-700",
-  VERIFYING: "bg-purple-100 text-purple-700",
-  PAID: "bg-green-100 text-green-700",
-  FAILED: "bg-red-100 text-red-700",
-  PENDING: "bg-gray-100 text-gray-700",
+  INITIATED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  PROCESSING: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  VERIFYING: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+  PAID: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  FAILED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  PENDING: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
 };
 
 interface TransactionStep {
@@ -311,7 +311,7 @@ export default function AdminOrdersPage() {
   if (loading && orders.length === 0) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 text-sky animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -321,8 +321,8 @@ export default function AdminOrdersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-navy">Transaction Monitor</h2>
-          <p className="text-sm text-navy/60">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Transaction Monitor</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Full lifecycle logging of every order — 5-step state machine
           </p>
         </div>
@@ -330,14 +330,14 @@ export default function AdminOrdersPage() {
           <button
             onClick={() => fetchOrders(pagination?.page || 1, statusFilter)}
             disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition disabled:opacity-50 dark:text-gray-200"
           >
             <RefreshCcw size={16} className={refreshing ? "animate-spin" : ""} />
             Refresh
           </button>
           <button
             onClick={() => exportOrders()}
-            className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition dark:text-gray-200"
           >
             <Download size={16} />
             Export
@@ -348,13 +348,13 @@ export default function AdminOrdersPage() {
       {/* Search and Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/40" size={16} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={16} />
           <input
             type="text"
             placeholder="Search by order ID, email, or txRef..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-sky/20 focus:border-sky/30"
+            className="w-full pl-10 pr-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 dark:bg-gray-800 dark:text-gray-100"
           />
         </div>
         {["", "INITIATED", "PROCESSING", "VERIFYING", "PAID", "FAILED"].map((s) => (
@@ -363,8 +363,8 @@ export default function AdminOrdersPage() {
             onClick={() => handleFilter(s)}
             className={`px-3 py-1.5 text-sm rounded-lg border transition ${
               statusFilter === s
-                ? "bg-navy text-white border-navy"
-                : "bg-white text-navy/70 border-border hover:border-navy/30"
+                ? "bg-gray-900 dark:bg-blue-600 text-white border-gray-900 dark:border-blue-600"
+                : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
             }`}
           >
             <Filter size={12} className="inline mr-1" />
@@ -379,9 +379,9 @@ export default function AdminOrdersPage() {
 
       {/* Orders List */}
       {orders.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border">
-          <Package className="w-12 h-12 text-navy/20 mx-auto mb-3" />
-          <p className="text-navy/60">No orders found</p>
+        <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700">
+          <Package className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+          <p className="text-gray-500 dark:text-gray-400">No orders found</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -398,29 +398,29 @@ export default function AdminOrdersPage() {
             .map((order) => {
             const isExpanded = expandedOrder === order.id;
             return (
-              <div key={order.id} className="bg-white rounded-xl border overflow-hidden">
+              <div key={order.id} className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-hidden">
                 {/* Order Header */}
                 <button
                   onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
-                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition text-left"
+                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition text-left"
                 >
                   <div className="flex items-center gap-4">
                     <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${STATUS_BADGES[order.status] || "bg-gray-100 text-gray-700"}`}>
                       {order.status}
                     </span>
                     <div>
-                      <p className="font-semibold text-navy text-sm">
+                      <p className="font-semibold text-gray-900 dark:text-white text-sm">
                         #{order.id.slice(-8).toUpperCase()}
                       </p>
-                      <p className="text-xs text-navy/50">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {order.customer.name || "Guest"} • {order.customer.email}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-right">
-                      <p className="font-bold text-navy">{formatCurrency(order.totalAmount)}</p>
-                      <p className="text-xs text-navy/50">{formatDate(order.createdAt)}</p>
+                      <p className="font-bold text-gray-900 dark:text-white">{formatCurrency(order.totalAmount)}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(order.createdAt)}</p>
                     </div>
                     {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                   </div>
@@ -428,7 +428,7 @@ export default function AdminOrdersPage() {
 
                 {/* Expanded Detail */}
                 {isExpanded && (
-                  <div className="border-t px-6 py-5 space-y-6">
+                  <div className="border-t dark:border-gray-700 px-6 py-5 space-y-6">
                     {/* Order Info Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <InfoCard label="TX Reference" value={order.txRef} icon={CreditCard} />
@@ -467,31 +467,31 @@ export default function AdminOrdersPage() {
 
                     {/* Order Items */}
                     <div>
-                      <h4 className="text-sm font-semibold text-navy mb-2">Order Items</h4>
-                      <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Order Items</h4>
+                      <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 space-y-1">
                         {order.items.map((item, idx) => (
                           <div key={idx} className="flex justify-between text-sm">
-                            <span className="text-navy/80">
+                            <span className="text-gray-700 dark:text-gray-200">
                               {item.product} × {item.quantity}
                             </span>
-                            <span className="font-medium text-navy">
+                            <span className="font-medium text-gray-900 dark:text-white">
                               {formatCurrency(item.unitPrice * item.quantity)}
                             </span>
                           </div>
                         ))}
-                        <div className="border-t pt-2 mt-2 flex justify-between font-semibold">
+                        <div className="border-t dark:border-gray-700 pt-2 mt-2 flex justify-between font-semibold dark:text-white">
                           <span>Total</span>
-                          <span className="text-sky">{formatCurrency(order.totalAmount)}</span>
+                          <span className="text-blue-600 dark:text-blue-400">{formatCurrency(order.totalAmount)}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Send Message to Customer */}
                     <div>
-                      <h4 className="text-sm font-semibold text-navy mb-2">Customer Communication</h4>
+                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Customer Communication</h4>
                       <button
                         onClick={() => setMessageOrderId(order.id)}
-                        className="flex items-center gap-2 px-4 py-2 bg-sky/10 text-sky rounded-lg hover:bg-sky/20 transition text-sm"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition text-sm"
                       >
                         <MessageSquare size={16} />
                         Send Message to Customer
@@ -500,16 +500,16 @@ export default function AdminOrdersPage() {
 
                     {/* Transaction Timeline — 5 Steps */}
                     <div>
-                      <h4 className="text-sm font-semibold text-navy mb-3">
+                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                         Transaction Lifecycle ({order.transactionSteps.length} events logged)
                       </h4>
 
                       {order.transactionSteps.length === 0 ? (
-                        <p className="text-sm text-navy/50 italic">No transaction logs recorded yet.</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 italic">No transaction logs recorded yet.</p>
                       ) : (
                         <div className="relative">
                           {/* Timeline line */}
-                          <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200" />
+                          <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
 
                           <div className="space-y-4">
                             {order.transactionSteps.map((step, idx) => {
@@ -524,24 +524,24 @@ export default function AdminOrdersPage() {
                                     <Icon size={10} />
                                   </div>
 
-                                  <div className={`rounded-lg border p-4 ${isLast ? info.color : "bg-white border-gray-200"}`}>
+                                  <div className={`rounded-lg border p-4 ${isLast ? info.color : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"}`}>
                                     <div className="flex items-start justify-between mb-1">
-                                      <h5 className="font-semibold text-sm text-navy">
+                                      <h5 className="font-semibold text-sm text-gray-900 dark:text-white">
                                         {info.label}
                                       </h5>
-                                      <span className="text-xs text-navy/50 whitespace-nowrap ml-4">
+                                      <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap ml-4">
                                         {formatDate(step.timestamp)}
                                       </span>
                                     </div>
 
-                                    <p className="text-xs text-navy/70 leading-relaxed mb-2">
+                                    <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-2">
                                       {info.description}
                                     </p>
 
                                     {/* Raw metadata */}
                                     {(step.ip || step.amount || step.details) && (
-                                      <div className="mt-2 pt-2 border-t border-gray-100">
-                                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-navy/60">
+                                        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
                                           {step.ip && (
                                             <span>
                                               <Globe size={10} className="inline mr-1" />
@@ -558,7 +558,7 @@ export default function AdminOrdersPage() {
 
                                         {step.details && (
                                           <details className="mt-2">
-                                            <summary className="text-xs font-medium text-navy/50 cursor-pointer hover:text-navy/70">
+                                            <summary className="text-xs font-medium text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-600 dark:text-gray-300">
                                               Raw Log Data (click to expand)
                                             </summary>
                                             <pre className="mt-2 p-3 bg-gray-900 text-green-400 rounded-lg text-xs overflow-x-auto max-h-64 overflow-y-auto font-mono">
@@ -578,17 +578,17 @@ export default function AdminOrdersPage() {
                     </div>
 
                     {/* Timestamps */}
-                    <div className="grid grid-cols-3 gap-4 pt-4 border-t text-xs text-navy/50">
+                    <div className="grid grid-cols-3 gap-4 pt-4 border-t text-xs text-gray-500 dark:text-gray-400">
                       <div>
-                        <span className="block font-medium text-navy/70">Created</span>
+                        <span className="block font-medium text-gray-600 dark:text-gray-300">Created</span>
                         {formatDate(order.createdAt)}
                       </div>
                       <div>
-                        <span className="block font-medium text-navy/70">Last Updated</span>
+                        <span className="block font-medium text-gray-600 dark:text-gray-300">Last Updated</span>
                         {formatDate(order.updatedAt)}
                       </div>
                       <div>
-                        <span className="block font-medium text-navy/70">Verified At</span>
+                        <span className="block font-medium text-gray-600 dark:text-gray-300">Verified At</span>
                         {order.verifiedAt ? formatDate(order.verifiedAt) : "—"}
                       </div>
                     </div>
@@ -609,8 +609,8 @@ export default function AdminOrdersPage() {
               onClick={() => handlePageChange(p)}
               className={`w-9 h-9 rounded-lg text-sm font-medium transition ${
                 p === pagination.page
-                  ? "bg-navy text-white"
-                  : "bg-white border hover:bg-gray-50 text-navy/70"
+                  ? "bg-gray-900 dark:bg-blue-600 text-white"
+                  : "bg-white border hover:bg-gray-50 text-gray-600 dark:text-gray-300"
               }`}
             >
               {p}
@@ -622,10 +622,10 @@ export default function AdminOrdersPage() {
       {/* Message Modal */}
       {messageOrderId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold">Send Message to Customer</h3>
+                <h3 className="text-xl font-bold dark:text-white">Send Message to Customer</h3>
                 <button
                   onClick={() => {
                     setMessageOrderId(null);
@@ -641,7 +641,7 @@ export default function AdminOrdersPage() {
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
                 placeholder="Enter your message to the customer..."
-                className="w-full h-32 p-3 border rounded-lg focus:ring-2 focus:ring-sky/20 focus:border-sky/30 resize-none"
+                className="w-full h-32 p-3 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 resize-none dark:bg-gray-700 dark:text-white"
               />
               
               <div className="flex gap-2 mt-4">
@@ -650,14 +650,14 @@ export default function AdminOrdersPage() {
                     setMessageOrderId(null);
                     setMessageText("");
                   }}
-                  className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50 transition"
+                  className="flex-1 px-4 py-2 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition dark:text-gray-200"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={sendMessage}
                   disabled={sendingMessage || !messageText.trim()}
-                  className="flex-1 flex items-center justify-center gap-2 bg-sky text-white px-4 py-2 rounded-lg hover:bg-sky/90 transition disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
                 >
                   {sendingMessage ? (
                     <Loader2 className="animate-spin" size={16} />
@@ -677,12 +677,12 @@ export default function AdminOrdersPage() {
 
 function InfoCard({ label, value, icon: Icon }: { label: string; value: string; icon: any }) {
   return (
-    <div className="bg-gray-50 rounded-lg p-3">
+    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
       <div className="flex items-center gap-2 mb-1">
-        <Icon size={12} className="text-navy/40" />
-        <span className="text-xs font-medium text-navy/50">{label}</span>
+        <Icon size={12} className="text-gray-400 dark:text-gray-500" />
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</span>
       </div>
-      <p className="text-sm text-navy font-mono truncate" title={value}>
+      <p className="text-sm text-gray-900 dark:text-white font-mono truncate" title={value}>
         {value}
       </p>
     </div>

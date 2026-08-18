@@ -1,8 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import {
-  ensureProductHasSlug,
-  looksLikeProductId,
-} from "@/lib/product-slug";
+import { looksLikeProductId } from "@/lib/product-slug";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
@@ -47,11 +44,9 @@ export async function getPublicProductByKey(key: string): Promise<PublicProduct 
 
   if (!product) return null;
 
-  const slug = await ensureProductHasSlug(prisma, product);
-
   return {
     id: product.id,
-    slug,
+    slug: product.slug || product.id,
     name: product.name,
     description: product.description,
     price: parseFloat(product.price.toString()),

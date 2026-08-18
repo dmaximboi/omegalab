@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
 import { isAllowedUploadThingUrl } from "@/lib/uploadthing-url";
 import {
-  ensureProductHasSlug,
+  backfillProductSlugs,
   ensureUniqueProductSlug,
   slugifyName,
 } from "@/lib/product-slug";
@@ -45,11 +45,14 @@ export async function GET() {
     });
 
     // Backfill missing slugs so admin "View" links never fall back to raw cuid
-    const withSlugs = [];
-    for (const product of products) {
-      const slug = await ensureProductHasSlug(getPrisma(), product);
-      withSlugs.push({ ...product, slug });
-    }
+    const slugsById = await backfillProductSlugs(
+      getPrisma(),
+      products.map((product) => ({ id: product.id, name: product.name, slug: product.slug }))
+    );
+    const withSlugs = products.map((product) => ({
+      ...product,
+      slug: slugsById.get(product.id) || product.id,
+    }));
 
     return NextResponse.json(
       { products: withSlugs },

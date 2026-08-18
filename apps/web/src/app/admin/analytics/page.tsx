@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
 import {
   LineChart,
   Line,
@@ -44,7 +43,6 @@ interface AnalyticsData {
 }
 
 export default function AdminAnalyticsPage() {
-  const { data: session } = useSession();
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -77,7 +75,7 @@ export default function AdminAnalyticsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 text-sky animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -85,8 +83,8 @@ export default function AdminAnalyticsPage() {
   if (!data) {
     return (
       <div className="text-center py-16">
-        <AlertCircle className="mx-auto text-navy/20 mb-3" size={48} />
-        <p className="text-navy/60 dark:text-gray-400">Failed to load analytics</p>
+        <AlertCircle className="mx-auto text-gray-300 dark:text-gray-600 mb-3" size={48} />
+        <p className="text-gray-500 dark:text-gray-400">Failed to load analytics</p>
       </div>
     );
   }
@@ -107,20 +105,20 @@ export default function AdminAnalyticsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-navy dark:text-white">Analytics Dashboard</h2>
-        <p className="text-sm text-navy/60 dark:text-gray-400">Revenue and order insights</p>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Analytics Dashboard</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Revenue and order insights</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-sky/10 rounded-lg">
-              <DollarSign className="text-sky" size={20} />
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+              <DollarSign className="text-blue-600 dark:text-blue-400" size={20} />
             </div>
             <div>
-              <p className="text-sm text-navy/60 dark:text-gray-400">Total Revenue</p>
-              <p className="text-2xl font-bold text-navy dark:text-white">{formatCurrency(data.totalRevenue)}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Total Revenue</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(data.totalRevenue)}</p>
             </div>
           </div>
         </div>
@@ -131,8 +129,8 @@ export default function AdminAnalyticsPage() {
               <TrendingUp className="text-green-600" size={20} />
             </div>
             <div>
-              <p className="text-sm text-navy/60 dark:text-gray-400">Revenue (30d)</p>
-              <p className="text-2xl font-bold text-navy dark:text-white">{formatCurrency(data.revenue30Days)}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Revenue (30d)</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(data.revenue30Days)}</p>
             </div>
           </div>
         </div>
@@ -143,8 +141,8 @@ export default function AdminAnalyticsPage() {
               <ShoppingCart className="text-purple-600" size={20} />
             </div>
             <div>
-              <p className="text-sm text-navy/60 dark:text-gray-400">Total Orders</p>
-              <p className="text-2xl font-bold text-navy dark:text-white">{data.totalOrders}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Total Orders</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{data.totalOrders}</p>
             </div>
           </div>
         </div>
@@ -155,8 +153,8 @@ export default function AdminAnalyticsPage() {
               <AlertCircle className="text-yellow-600" size={20} />
             </div>
             <div>
-              <p className="text-sm text-navy/60 dark:text-gray-400">Pending Orders</p>
-              <p className="text-2xl font-bold text-navy dark:text-white">{data.pendingOrders}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Pending Orders</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{data.pendingOrders}</p>
             </div>
           </div>
         </div>
@@ -166,7 +164,7 @@ export default function AdminAnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Daily Revenue Chart */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-navy dark:text-white mb-4">Daily Revenue (30 Days)</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Daily Revenue (30 Days)</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={dailyRevenueData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -181,7 +179,7 @@ export default function AdminAnalyticsPage() {
 
         {/* Revenue by Status */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-navy dark:text-white mb-4">Revenue by Status</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Revenue by Status</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -206,21 +204,21 @@ export default function AdminAnalyticsPage() {
 
       {/* Top Products */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-navy dark:text-white mb-4">Top Products (by quantity sold)</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Products (by quantity sold)</h3>
         <div className="space-y-3">
           {data.topProducts.map((product, idx) => (
             <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-sky/10 rounded-lg">
-                  <Package className="text-sky" size={16} />
+                <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                  <Package className="text-blue-600 dark:text-blue-400" size={16} />
                 </div>
-                <span className="font-medium text-navy dark:text-white">{product.name}</span>
+                <span className="font-medium text-gray-900 dark:text-white">{product.name}</span>
               </div>
-              <span className="text-sm text-navy/60 dark:text-gray-400">{product.quantity} sold</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{product.quantity} sold</span>
             </div>
           ))}
           {data.topProducts.length === 0 && (
-            <p className="text-sm text-navy/50 dark:text-gray-400 italic">No product data available</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 italic">No product data available</p>
           )}
         </div>
       </div>

@@ -139,14 +139,14 @@ export default function AdminVerifyQRPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="bg-white rounded-xl border p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 bg-sky/10 rounded-xl flex items-center justify-center">
-            <QrCode className="text-sky" size={24} />
+          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+            <QrCode className="text-blue-600 dark:text-blue-400" size={24} />
           </div>
           <div>
-            <h2 className="font-bold text-navy text-lg">Receipt Verification</h2>
-            <p className="text-sm text-navy/50">
+            <h2 className="font-bold text-gray-900 dark:text-white text-lg">Receipt Verification</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Scan QR code or enter transaction reference to verify
             </p>
           </div>
@@ -157,7 +157,7 @@ export default function AdminVerifyQRPage() {
           {!scannerActive ? (
             <button
               onClick={startScanner}
-              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-navy text-white rounded-xl hover:bg-navy/90 transition text-sm font-medium"
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gray-900 dark:bg-blue-600 text-white rounded-xl hover:bg-gray-800 dark:hover:bg-blue-700 transition text-sm font-medium"
             >
               <Camera size={20} />
               Open Camera Scanner
@@ -166,7 +166,7 @@ export default function AdminVerifyQRPage() {
             <div className="space-y-3">
               <div
                 ref={scannerContainerRef}
-                className="rounded-xl overflow-hidden border-2 border-sky"
+                className="rounded-xl overflow-hidden border-2 border-blue-500"
               >
                 <div id="qr-scanner-region" className="w-full" />
               </div>
@@ -202,12 +202,12 @@ export default function AdminVerifyQRPage() {
             value={code}
             onChange={(e) => setCode(e.target.value)}
             placeholder="Enter receipt hash or transaction ref (OMEGA-...)..."
-            className="flex-1 px-4 py-3 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-sky/50"
+            className="flex-1 px-4 py-3 border dark:border-gray-600 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:bg-gray-900 dark:text-white"
           />
           <button
             type="submit"
             disabled={loading || !code.trim()}
-            className="px-6 py-3 bg-sky text-white rounded-lg text-sm font-medium hover:bg-sky/90 transition disabled:opacity-50 flex items-center gap-2"
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
             Verify
@@ -215,11 +215,11 @@ export default function AdminVerifyQRPage() {
         </form>
 
         {/* Security Info */}
-        <div className="bg-gray-50 rounded-lg p-4 mb-6 text-xs text-navy/60">
+        <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 mb-6 text-xs text-gray-600 dark:text-gray-400">
           <div className="flex items-start gap-2">
-            <Shield size={14} className="mt-0.5 text-sky" />
+            <Shield size={14} className="mt-0.5 text-blue-600 dark:text-blue-400" />
             <div>
-              <p className="font-medium text-navy/80 mb-1">How QR Verification Works</p>
+              <p className="font-medium text-gray-800 dark:text-gray-200 mb-1">How QR Verification Works</p>
               <ul className="space-y-1 list-disc list-inside">
                 <li>Each receipt contains a lookUp generated at order time</li>
                 <li>The QR code encodes a URL with the lookUp as a verification parameter</li>

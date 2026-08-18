@@ -4,22 +4,16 @@ import { authOptions } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
 import { cookies } from "next/headers";
 import { timingSafeEqualString } from "@/lib/payment";
-import { syncOrderCheckoutState } from "@/lib/order-checkout-sync";
 
 export const dynamic = "force-dynamic";
 
-// Lazy Prisma client - only instantiated when first accessed
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
 function getPrisma() {
   if (!globalForPrisma.prisma) {
     globalForPrisma.prisma = new PrismaClient({
       log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-      datasources: {
-        db: {
-          url: process.env.DATABASE_URL,
-        },
-      },
+      datasources: { db: { url: process.env.DATABASE_URL } },
     });
   }
   return globalForPrisma.prisma;
@@ -44,9 +38,7 @@ export async function GET(
               select: {
                 id: true,
                 name: true,
-                images: {
-                  select: { url: true },
-                },
+                images: { select: { url: true } },
               },
             },
           },
@@ -65,7 +57,6 @@ export async function GET(
       order.tokenExpiresAt &&
       new Date() < new Date(order.tokenExpiresAt);
 
-    // Otherwise require session-based ownership or admin
     if (!hasValidPaymentToken) {
       if (!session?.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -75,50 +66,23 @@ export async function GET(
       }
     }
 
-    await syncOrderCheckoutState(getPrisma(), order);
-    const syncedOrder = await getPrisma().order.findUnique({
-      where: { id: params.id },
-      include: {
-        user: { select: { email: true, name: true } },
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                images: {
-                  select: { url: true },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-    if (!syncedOrder) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-
     const customer = {
-      name: syncedOrder.customerName || syncedOrder.user?.name || "Customer",
-      email: syncedOrder.customerEmail || syncedOrder.user?.email || "",
-      phone: syncedOrder.customerPhone || "",
+      name: order.customerName || order.user?.name || "Customer",
+      email: order.customerEmail || order.user?.email || "",
+      phone: order.customerPhone || "",
     };
 
     return NextResponse.json({
-      id: syncedOrder.id,
-      totalAmount: Number(syncedOrder.totalAmount),
-      orderCurrency: syncedOrder.orderCurrency || "NGN",
-      paymentCurrency: syncedOrder.paymentCurrency || null,
-      paymentAmount: syncedOrder.paymentAmount ? Number(syncedOrder.paymentAmount.toString()) : null,
-      status: syncedOrder.status,
-      txRef: syncedOrder.txRef,
+      id: order.id,
+      totalAmount: Number(order.totalAmount),
+      status: order.status,
+      txRef: order.txRef,
       userEmail: customer.email,
       userName: customer.name,
       userPhone: customer.phone,
-      createdAt: syncedOrder.createdAt.toISOString(),
-      resumeUrl: syncedOrder.paymentVerified ? null : `/payment/${syncedOrder.id}`,
-      items: syncedOrder.items.map((item: (typeof syncedOrder.items)[number]) => ({
+      createdAt: order.createdAt.toISOString(),
+      resumeUrl: order.paymentVerified ? null : `/payment/${order.id}`,
+      items: order.items.map((item: (typeof order.items)[number]) => ({
         id: item.id,
         quantity: item.quantity,
         unitPrice: Number(item.unitPrice),

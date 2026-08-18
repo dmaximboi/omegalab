@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { ensureProductHasSlug } from "@/lib/product-slug";
+import { backfillProductSlugs } from "@/lib/product-slug";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 300;
@@ -34,20 +34,21 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    const transformedProducts = [];
-    for (const product of products) {
-      const slug = await ensureProductHasSlug(prisma, product);
-      transformedProducts.push({
+    const slugsById = await backfillProductSlugs(
+      prisma,
+      products.map((product) => ({ id: product.id, name: product.name, slug: product.slug }))
+    );
+
+    const transformedProducts = products.map((product) => ({
         id: product.id,
-        slug,
+        slug: slugsById.get(product.id) || product.id,
         name: product.name,
         description: product.description,
         price: parseFloat(product.price.toString()),
         category: product.category,
         image: product.images[0]?.url || "",
         images: product.images.map((img) => img.url),
-      });
-    }
+      }));
 
     return NextResponse.json(
       { products: transformedProducts },

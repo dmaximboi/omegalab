@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { 
-  ArrowLeft, Loader2, CheckCircle, XCircle, 
-  Clock, Search, Filter, ChevronDown 
+  Loader2, CheckCircle, XCircle, 
+  Clock, Search, ChevronDown 
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -89,28 +88,13 @@ export default function AdminTransactionsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link 
-                href="/admin"
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-              >
-                <ArrowLeft size={20} />
-              </Link>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Transaction Logs</h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">View all payment transactions</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Transaction Logs</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">View all payment transactions</p>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <div>
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-4 mb-6 flex flex-wrap gap-4">
           <div className="flex-1 min-w-[200px]">
@@ -218,7 +202,7 @@ export default function AdminTransactionsPage() {
             </div>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }
