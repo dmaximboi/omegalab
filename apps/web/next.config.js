@@ -41,11 +41,22 @@ const nextConfig = {
           { key: "Cache-Control", value: "public, max-age=86400" },
         ],
       },
+      {
+        source: "/api/products",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=300, s-maxage=600, stale-while-revalidate=1800" },
+        ],
+      },
+      {
+        source: "/api/config",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=3600, s-maxage=3600" },
+        ],
+      },
     ];
   },
-  // Enable experimental features for better performance
   experimental: {
-    optimizePackageImports: ["lucide-react", "framer-motion"],
+    optimizePackageImports: ["lucide-react", "framer-motion", "recharts"],
   },
 };
 

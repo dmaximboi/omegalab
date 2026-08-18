@@ -1,26 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PUBLIC_SITE_CONFIG } from "@/lib/site-config";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
-// Hardcoded public config - NOT from environment variables
-// This prevents any possibility of env variable injection
-const PUBLIC_CONFIG = {
-  company: {
-    name: "De-Omega Labaffairs Nig. Ltd.",
-    email: "info@omegalabaffairs.com",
-    phone: "+2348132862637",
-    address: "Ilorin, Kwara State, Nigeria",
-    whatsapp: "+2348132862637",
-  },
-} as const;
-
-// Public company config - read-only, no user input
 export async function GET(request: NextRequest) {
-  // Validate request origin
   const origin = request.headers.get("origin");
   const host = request.headers.get("host");
-  
-  // Only allow same-origin requests or no origin (direct browser access)
+
   if (origin) {
     try {
       const originHost = new URL(origin).hostname;
@@ -33,17 +19,13 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const response = NextResponse.json(PUBLIC_CONFIG);
-  
-  // Security headers
+  const response = NextResponse.json(PUBLIC_SITE_CONFIG);
   response.headers.set("Cache-Control", "public, max-age=3600, s-maxage=3600");
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
-  
   return response;
 }
 
-// Block all other methods
 export async function POST() {
   return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
 }

@@ -3,19 +3,12 @@
  * Does NOT cache payment/admin/order data. Other tabs still need the network.
  */
 
-const CACHE_KEY = "omega_catalogue_cache_v1";
-const IDLE_MS = 20 * 60 * 1000; // 20 minutes
+import type { CatalogueProduct } from "@/lib/catalogue-data";
 
-export type CatalogueProduct = {
-  id: string;
-  slug?: string | null;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  category: string;
-  images?: string[];
-};
+export type { CatalogueProduct };
+
+const CACHE_KEY = "omega_catalogue_cache_v1";
+const IDLE_MS = 20 * 60 * 1000;
 
 type CachePayload = {
   products: CatalogueProduct[];
@@ -41,7 +34,7 @@ function writeRaw(payload: CachePayload) {
   try {
     sessionStorage.setItem(CACHE_KEY, JSON.stringify(payload));
   } catch {
-    // quota / private mode — ignore
+    return;
   }
 }
 
@@ -50,11 +43,10 @@ export function clearCatalogueCache() {
   try {
     sessionStorage.removeItem(CACHE_KEY);
   } catch {
-    // ignore
+    return;
   }
 }
 
-/** Returns products if cache is still within the inactivity window. */
 export function getCatalogueCache(): CatalogueProduct[] | null {
   const data = readRaw();
   if (!data) return null;
@@ -74,7 +66,6 @@ export function setCatalogueCache(products: CatalogueProduct[]) {
   });
 }
 
-/** Bump last-active timestamp while user is interacting with catalogue. */
 export function touchCatalogueCache() {
   const data = readRaw();
   if (!data) return;

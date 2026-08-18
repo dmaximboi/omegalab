@@ -8,6 +8,7 @@ import {
   ensureUniqueProductSlug,
   slugifyName,
 } from "@/lib/product-slug";
+import { revalidateCatalogueCache } from "@/lib/revalidate-catalogue";
 
 export const dynamic = "force-dynamic";
 
@@ -117,6 +118,8 @@ export async function POST(request: Request) {
     });
 
     console.log("[ADMIN] Product created successfully:", product.id, "slug:", slug);
+
+    revalidateCatalogueCache();
 
     if (session.user.id) {
       await prisma.auditLog

@@ -45,12 +45,12 @@ export default function NotificationBell() {
     }
   }, []);
 
-  // Fetch on mount + poll every 30s
   useEffect(() => {
+    if (!isOpen) return;
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  }, [isOpen, fetchNotifications]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

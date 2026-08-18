@@ -54,15 +54,33 @@ export function Navbar() {
     updateCartCount();
     window.addEventListener("storage", updateCartCount);
 
-    // If user is logged in, sync cart from server
-    if (session?.user) {
+    if (!session?.user) {
+      return () => window.removeEventListener("storage", updateCartCount);
+    }
+
+    const syncFromServer = () => {
       cart.loadFromServer().then(() => {
         updateCartCount();
         window.dispatchEvent(new Event("storage"));
       });
+    };
+
+    let idleId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleId = window.requestIdleCallback(syncFromServer, { timeout: 4000 });
+    } else {
+      timeoutId = setTimeout(syncFromServer, 2000);
     }
 
-    return () => window.removeEventListener("storage", updateCartCount);
+    return () => {
+      window.removeEventListener("storage", updateCartCount);
+      if (idleId !== undefined && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [session?.user]);
 
   const isActive = (href: string) => {

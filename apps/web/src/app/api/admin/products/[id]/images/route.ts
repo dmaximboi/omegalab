@@ -8,6 +8,7 @@ import {
   isAllowedUploadThingUrl,
 } from "@/lib/uploadthing-url";
 import { looksLikeProductId } from "@/lib/product-slug";
+import { revalidateCatalogueCache } from "@/lib/revalidate-catalogue";
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +82,8 @@ export async function POST(
       orderBy: { order: "asc" },
     });
 
+    revalidateCatalogueCache();
+
     return NextResponse.json({ success: true, images });
   } catch (error) {
     console.error("[ADMIN] Image add error:", error);
@@ -132,6 +135,8 @@ export async function DELETE(
     await getPrisma().productImage.delete({
       where: { id: imageId },
     });
+
+    revalidateCatalogueCache();
 
     return NextResponse.json({ success: true });
   } catch (error) {

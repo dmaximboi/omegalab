@@ -5,6 +5,7 @@ import { PrismaClient } from "@prisma/client";
 import { utapi } from "@/lib/uploadthing";
 import { extractUploadThingKeys } from "@/lib/uploadthing-url";
 import { ensureUniqueProductSlug, slugifyName, looksLikeProductId, ensureProductHasSlug } from "@/lib/product-slug";
+import { revalidateCatalogueCache } from "@/lib/revalidate-catalogue";
 
 export const dynamic = "force-dynamic";
 
@@ -148,6 +149,8 @@ export async function PATCH(
         .catch(() => {});
     }
 
+    revalidateCatalogueCache();
+
     return NextResponse.json({
       ...product,
       price: parseFloat(product.price.toString()),
@@ -228,6 +231,8 @@ export async function DELETE(
         })
         .catch(() => {});
     }
+
+    revalidateCatalogueCache();
 
     return NextResponse.json({
       success: true,
