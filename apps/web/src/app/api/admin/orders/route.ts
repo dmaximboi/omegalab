@@ -22,6 +22,15 @@ function getPrisma() {
   return globalForPrisma.prisma;
 }
 
+function parseLogResponseData(value: string | null | undefined): unknown {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return { message: value };
+  }
+}
+
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -105,7 +114,7 @@ export async function GET(request: Request) {
         timestamp: log.createdAt,
         ip: log.ipAddress,
         amount: log.amount ? parseFloat(log.amount.toString()) : null,
-        details: log.responseData ? JSON.parse(log.responseData) : null,
+        details: parseLogResponseData(log.responseData),
       })),
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
